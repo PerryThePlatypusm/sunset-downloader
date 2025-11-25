@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import PlatformSelector from "@/components/PlatformSelector";
 import QualitySelector from "@/components/QualitySelector";
+import SpotifyQualitySelector from "@/components/SpotifyQualitySelector";
+import EpisodeSelector from "@/components/EpisodeSelector";
 import DownloadProgress from "@/components/DownloadProgress";
 import {
   Download,
