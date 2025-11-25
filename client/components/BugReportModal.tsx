@@ -1,5 +1,10 @@
 import React, { useState, useRef } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { X, Upload, Loader } from "lucide-react";
@@ -28,7 +33,8 @@ export default function BugReportModal({
     const device = /Mobile|Android|iPhone|iPad|iPod/.test(ua)
       ? "Mobile"
       : "Desktop";
-    const os = /Windows|Mac|Linux|iPhone|iPad|Android/.exec(ua)?.[0] || "Unknown";
+    const os =
+      /Windows|Mac|Linux|iPhone|iPad|Android/.exec(ua)?.[0] || "Unknown";
 
     return {
       browser,
@@ -120,7 +126,9 @@ export default function BugReportModal({
         setSuccess(false);
       }, 2000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to submit bug report");
+      setError(
+        err instanceof Error ? err.message : "Failed to submit bug report",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -203,9 +211,11 @@ export default function BugReportModal({
           {/* Browser Info Display */}
           <div className="p-3 rounded-lg bg-sunset-500/10 border border-sunset-500/30">
             <p className="text-sunset-300 text-sm">
-              <span className="font-semibold">Captured Info:</span> {navigator.userAgent.split(" ").slice(-2).join(" ")} on{" "}
-              {/Windows|Mac|Linux|iPhone|iPad|Android/.exec(navigator.userAgent)?.[0] ||
-                "Unknown"}{" "}
+              <span className="font-semibold">Captured Info:</span>{" "}
+              {navigator.userAgent.split(" ").slice(-2).join(" ")} on{" "}
+              {/Windows|Mac|Linux|iPhone|iPad|Android/.exec(
+                navigator.userAgent,
+              )?.[0] || "Unknown"}{" "}
               • Anonymous
             </p>
           </div>
@@ -221,7 +231,8 @@ export default function BugReportModal({
           {success && (
             <div className="p-3 rounded-lg bg-green-500/20 border border-green-500/50">
               <p className="text-green-300 text-sm">
-                ✓ Bug report submitted! Thanks for helping improve SunsetDownloader.
+                ✓ Bug report submitted! Thanks for helping improve
+                SunsetDownloader.
               </p>
             </div>
           )}

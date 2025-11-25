@@ -7,7 +7,15 @@ import SpotifyQualitySelector from "@/components/SpotifyQualitySelector";
 import EpisodeSelector from "@/components/EpisodeSelector";
 import DownloadProgress from "@/components/DownloadProgress";
 import BugReportModal from "@/components/BugReportModal";
-import { Download, Music, Video, Zap, Check, AlertCircle, Bug } from "lucide-react";
+import {
+  Download,
+  Music,
+  Video,
+  Zap,
+  Check,
+  AlertCircle,
+  Bug,
+} from "lucide-react";
 
 export default function Index() {
   const [url, setUrl] = useState("");
@@ -110,13 +118,13 @@ export default function Index() {
                 <Download className="w-6 h-6 text-white" />
               </div>
               <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-sunset-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">
-                SunsetDownloader
-              </h1>
-              <p className="text-sunset-300 text-xs">
-                Multi-Platform Media Downloader
-              </p>
-            </div>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-sunset-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">
+                  SunsetDownloader
+                </h1>
+                <p className="text-sunset-300 text-xs">
+                  Multi-Platform Media Downloader
+                </p>
+              </div>
             </div>
             <div className="hidden sm:flex items-center gap-2 text-sunset-300 text-sm">
               <Zap className="w-4 h-4" />
@@ -359,7 +367,8 @@ export default function Index() {
         <div className="max-w-6xl mx-auto px-4 py-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
             <p className="text-sunset-400 text-sm">
-              © 2024 SunsetDownloader. Download responsibly and respect copyright laws.
+              © 2024 SunsetDownloader. Download responsibly and respect
+              copyright laws.
             </p>
             <button
               onClick={() => setBugReportOpen(true)}

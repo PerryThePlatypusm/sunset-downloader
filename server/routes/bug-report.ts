@@ -5,7 +5,8 @@ import type { Multer } from "multer";
 // Initialize Supabase (we'll set env vars later)
 const supabaseUrl = process.env.SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_ANON_KEY || "";
-const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
+const supabase =
+  supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
 interface BugReportRequest extends Request {
   file?: Express.Multer.File;
@@ -23,7 +24,7 @@ interface BrowserInfo {
 
 export const handleBugReport: RequestHandler = async (
   req: BugReportRequest,
-  res
+  res,
 ) => {
   try {
     // Parse FormData fields
@@ -71,9 +72,7 @@ export const handleBugReport: RequestHandler = async (
         } else {
           const {
             data: { publicUrl },
-          } = supabase.storage
-            .from("bug-reports")
-            .getPublicUrl(fileName);
+          } = supabase.storage.from("bug-reports").getPublicUrl(fileName);
           fileUrl = publicUrl;
         }
       } catch (error) {

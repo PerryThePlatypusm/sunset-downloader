@@ -5,9 +5,11 @@ The bug reporting system is now integrated into SunsetDownloader! Users can clic
 ## Setup Instructions
 
 ### 1. Resend (Email Service) - REQUIRED ✅
+
 Resend will send bug reports to your email.
 
 **Steps:**
+
 1. Go to https://resend.com
 2. Sign up for free (no credit card needed)
 3. Create a new API key from the dashboard
@@ -18,14 +20,16 @@ Resend will send bug reports to your email.
    ```
 
 ### 2. Supabase (File Storage) - OPTIONAL
+
 Supabase stores screenshots and videos from bug reports.
 
 **Steps:**
+
 1. Go to https://supabase.com
 2. Create a new project (free tier)
 3. Go to **Storage** and create a new bucket named `bug-reports`
 4. Get your credentials from **Settings → API**:
-   - Copy your `Project URL` 
+   - Copy your `Project URL`
    - Copy your `Anon Key`
 5. Add to your `.env` file:
    ```
@@ -34,9 +38,11 @@ Supabase stores screenshots and videos from bug reports.
    ```
 
 ### 3. Discord Webhook (Optional - For Discord Notifications)
+
 Get bug reports sent to your Discord server instantly.
 
 **Steps:**
+
 1. Go to your Discord server
 2. Right-click the channel → **Edit Channel**
 3. Go to **Integrations → Webhooks**
@@ -57,6 +63,7 @@ Get bug reports sent to your Discord server instantly.
 3. Click **Submit Bug Report**
 
 The report will be:
+
 - ✅ Sent to `jacobperry27@gmail.com` via Resend
 - ✅ Posted to Discord (if webhook configured)
 - ✅ Stored in Supabase (if configured)
@@ -91,16 +98,19 @@ DISCORD_WEBHOOK_URL=your_webhook_url
 ## Receiving and Responding to Bug Reports
 
 ### Email Notifications
+
 - Check `jacobperry27@gmail.com` for bug reports
 - Each report includes full context and reproduction steps
 - File attachments (if uploaded) are linked in the email
 
 ### Discord Notifications
+
 - Real-time alerts in your Discord channel
 - Embed with all bug details
 - Easy to discuss with team
 
 ### Manual Check
+
 - Go to Supabase → `bug_reports` table to see all submitted reports
 - All reports are stored with full metadata
 
@@ -114,6 +124,7 @@ DISCORD_WEBHOOK_URL=your_webhook_url
 ---
 
 **Need Help?**
+
 - Resend docs: https://resend.com/docs
 - Supabase docs: https://supabase.com/docs
 - Discord webhooks: https://discord.com/developers/docs/resources/webhook
