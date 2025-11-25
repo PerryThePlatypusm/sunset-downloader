@@ -6,6 +6,7 @@ interface DownloadRequest {
   platform?: string;
   quality?: string;
   audioOnly?: boolean;
+  episodes?: number[];
 }
 
 interface DownloadResponse {
