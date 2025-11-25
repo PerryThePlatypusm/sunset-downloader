@@ -6,7 +6,8 @@ import QualitySelector from "@/components/QualitySelector";
 import SpotifyQualitySelector from "@/components/SpotifyQualitySelector";
 import EpisodeSelector from "@/components/EpisodeSelector";
 import DownloadProgress from "@/components/DownloadProgress";
-import { Download, Music, Video, Zap, Check, AlertCircle } from "lucide-react";
+import BugReportModal from "@/components/BugReportModal";
+import { Download, Music, Video, Zap, Check, AlertCircle, Bug } from "lucide-react";
 
 export default function Index() {
   const [url, setUrl] = useState("");
