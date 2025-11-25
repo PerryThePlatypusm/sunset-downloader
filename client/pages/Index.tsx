@@ -20,6 +20,7 @@ export default function Index() {
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
   const [downloadType, setDownloadType] = useState<"video" | "audio">("video");
   const [quality, setQuality] = useState("1080");
+  const [selectedEpisodes, setSelectedEpisodes] = useState<number[]>([]);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [downloadStatus, setDownloadStatus] = useState<
