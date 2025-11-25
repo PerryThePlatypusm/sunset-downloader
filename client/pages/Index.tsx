@@ -36,6 +36,14 @@ export default function Index() {
       return;
     }
 
+    const isAnimePlatform =
+      selectedPlatform === "crunchyroll" || selectedPlatform === "hianime";
+    if (isAnimePlatform && selectedEpisodes.length === 0) {
+      setErrorMessage("Please select at least one episode to download");
+      setDownloadStatus("error");
+      return;
+    }
+
     try {
       setIsDownloading(true);
       setDownloadStatus("validating");
@@ -52,6 +60,7 @@ export default function Index() {
           platform: selectedPlatform,
           quality,
           audioOnly: downloadType === "audio",
+          episodes: selectedEpisodes.length > 0 ? selectedEpisodes : undefined,
         }),
       });
 
