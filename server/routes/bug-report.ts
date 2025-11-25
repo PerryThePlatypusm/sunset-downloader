@@ -27,7 +27,10 @@ interface BrowserInfo {
 
 export const handleBugReport: RequestHandler = async (req, res) => {
   try {
-    const { description, stepsToReproduce, browserInfo } = req.body;
+    // Parse FormData fields
+    const description = (req.body as any).description || "";
+    const stepsToReproduce = (req.body as any).stepsToReproduce || "";
+    const browserInfoStr = (req.body as any).browserInfo || "{}";
     const file = (req as any).file;
 
     // Validate input
