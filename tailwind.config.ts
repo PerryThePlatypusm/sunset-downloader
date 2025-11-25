@@ -57,6 +57,18 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        sunset: {
+          "50": "hsl(var(--sunset-50))",
+          "100": "hsl(var(--sunset-100))",
+          "200": "hsl(var(--sunset-200))",
+          "300": "hsl(var(--sunset-300))",
+          "400": "hsl(var(--sunset-400))",
+          "500": "hsl(var(--sunset-500))",
+          "600": "hsl(var(--sunset-600))",
+          "700": "hsl(var(--sunset-700))",
+          "800": "hsl(var(--sunset-800))",
+          "900": "hsl(var(--sunset-900))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
