@@ -36,9 +36,9 @@ export default function EpisodeSelector({
       episodes.push(i);
     }
 
-    const merged = Array.from(
-      new Set([...selectedEpisodes, ...episodes])
-    ).sort((a, b) => a - b);
+    const merged = Array.from(new Set([...selectedEpisodes, ...episodes])).sort(
+      (a, b) => a - b,
+    );
 
     setSelectedEpisodes(merged);
     onSelect(merged);
@@ -102,7 +102,9 @@ export default function EpisodeSelector({
                 type="number"
                 min="1"
                 value={rangeStart}
-                onChange={(e) => setRangeStart(Math.max(1, parseInt(e.target.value) || 1))}
+                onChange={(e) =>
+                  setRangeStart(Math.max(1, parseInt(e.target.value) || 1))
+                }
                 className="w-full p-2 rounded bg-sunset-900/50 border border-sunset-700/50 text-white text-sm"
               />
             </div>
@@ -114,7 +116,11 @@ export default function EpisodeSelector({
                 type="number"
                 min="1"
                 value={rangeEnd}
-                onChange={(e) => setRangeEnd(Math.max(rangeStart, parseInt(e.target.value) || 12))}
+                onChange={(e) =>
+                  setRangeEnd(
+                    Math.max(rangeStart, parseInt(e.target.value) || 12),
+                  )
+                }
                 className="w-full p-2 rounded bg-sunset-900/50 border border-sunset-700/50 text-white text-sm"
               />
             </div>
@@ -153,7 +159,8 @@ export default function EpisodeSelector({
               <p className="text-sunset-300 text-sm">
                 <span className="font-semibold">Selected episodes:</span>{" "}
                 {selectedEpisodes.slice(0, 10).join(", ")}
-                {selectedEpisodes.length > 10 && `... and ${selectedEpisodes.length - 10} more`}
+                {selectedEpisodes.length > 10 &&
+                  `... and ${selectedEpisodes.length - 10} more`}
               </p>
             </div>
           )}

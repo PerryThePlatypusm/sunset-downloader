@@ -69,12 +69,8 @@ export default function DownloadProgress({
         {(status === "validating" || status === "downloading") && (
           <Loader className="w-5 h-5 text-sunset-400 animate-spin" />
         )}
-        {status === "success" && (
-          <Check className="w-5 h-5 text-green-400" />
-        )}
-        {status === "error" && (
-          <AlertCircle className="w-5 h-5 text-red-400" />
-        )}
+        {status === "success" && <Check className="w-5 h-5 text-green-400" />}
+        {status === "error" && <AlertCircle className="w-5 h-5 text-red-400" />}
         <span className={`text-sm font-medium ${getStatusColor()}`}>
           {getStatusMessage()}
         </span>
@@ -82,7 +78,9 @@ export default function DownloadProgress({
 
       {/* Progress Bar */}
       <div className="w-full">
-        <div className={`w-full h-2 rounded-full overflow-hidden ${getProgressBarColor()}`}>
+        <div
+          className={`w-full h-2 rounded-full overflow-hidden ${getProgressBarColor()}`}
+        >
           <div
             className={`h-full transition-all duration-300 ease-out ${getProgressColor()}`}
             style={{

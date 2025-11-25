@@ -71,7 +71,8 @@ export const handleDownload: RequestHandler = async (req, res) => {
     }
 
     // Validate quality
-    const selectedQuality = quality || DEFAULT_QUALITY[audioOnly ? "audio" : "video"];
+    const selectedQuality =
+      quality || DEFAULT_QUALITY[audioOnly ? "audio" : "video"];
 
     // Special validation for Spotify
     if (detectedPlatform === "spotify" && !audioOnly) {
@@ -93,7 +94,7 @@ export const handleDownload: RequestHandler = async (req, res) => {
 
       // Validate episode numbers
       const validEpisodes = episodes.filter(
-        (ep) => Number.isInteger(ep) && ep > 0 && ep <= 1000
+        (ep) => Number.isInteger(ep) && ep > 0 && ep <= 1000,
       );
 
       if (validEpisodes.length === 0) {
@@ -105,7 +106,10 @@ export const handleDownload: RequestHandler = async (req, res) => {
 
     // Simulate download processing
     const downloadType = audioOnly ? "mp3" : "mp4";
-    const episodeInfo = episodes && episodes.length > 0 ? `_eps_${episodes.slice(0, 5).join("-")}` : "";
+    const episodeInfo =
+      episodes && episodes.length > 0
+        ? `_eps_${episodes.slice(0, 5).join("-")}`
+        : "";
     const fileName = `media_${Date.now()}${episodeInfo}.${downloadType}`;
 
     // Create a mock file response (in production, this would be actual media content)
@@ -118,14 +122,11 @@ export const handleDownload: RequestHandler = async (req, res) => {
         episodes: episodes && episodes.length > 0 ? episodes : undefined,
         timestamp: new Date().toISOString(),
         note: "This is a mock response. In production, actual media content would be served here.",
-      })
+      }),
     );
 
     res.setHeader("Content-Type", audioOnly ? "audio/mpeg" : "video/mp4");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${fileName}"`
-    );
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
     res.setHeader("Content-Length", mockContent.length);
 
     res.send(mockContent);

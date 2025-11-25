@@ -123,7 +123,7 @@ export default function PlatformSelector({
           key={platform.id}
           onClick={() =>
             onSelectPlatform(
-              selectedPlatform === platform.id ? null : platform.id
+              selectedPlatform === platform.id ? null : platform.id,
             )
           }
           className={`p-3 rounded-lg border-2 transition-all flex flex-col items-center justify-center gap-2 ${
