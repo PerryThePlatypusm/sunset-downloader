@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import { handleDemo } from "./routes/demo";
+import { handleDownload, validateUrl } from "./routes/download";
 
 export function createServer() {
   const app = express();
@@ -18,6 +19,10 @@ export function createServer() {
   });
 
   app.get("/api/demo", handleDemo);
+
+  // Download routes
+  app.post("/api/download", handleDownload);
+  app.post("/api/validate-url", validateUrl);
 
   return app;
 }
