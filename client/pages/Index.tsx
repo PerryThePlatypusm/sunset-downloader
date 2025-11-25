@@ -356,7 +356,7 @@ export default function Index() {
       <footer className="border-t border-sunset-700/50 backdrop-blur-md bg-sunset-900/50 mt-16">
         <div className="max-w-6xl mx-auto px-4 py-8 text-center text-sunset-400 text-sm">
           <p>
-            © 2024 MediaFlow. Download responsibly and respect copyright laws.
+            © 2024 SunsetDownloader. Download responsibly and respect copyright laws.
           </p>
         </div>
       </footer>
