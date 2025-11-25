@@ -217,7 +217,19 @@ export default function Index() {
             </div>
           )}
 
-          {downloadType === "audio" && (
+          {downloadType === "audio" && selectedPlatform === "spotify" && (
+            <div className="mb-6">
+              <label className="block text-sunset-200 font-semibold mb-3">
+                Spotify Audio Quality
+              </label>
+              <SpotifyQualitySelector
+                quality={quality}
+                onQualityChange={setQuality}
+              />
+            </div>
+          )}
+
+          {downloadType === "audio" && selectedPlatform !== "spotify" && (
             <div className="mb-6">
               <label className="block text-sunset-200 font-semibold mb-3">
                 Audio Quality
@@ -229,6 +241,12 @@ export default function Index() {
               />
             </div>
           )}
+
+          {/* Episode Selector for Anime Platforms */}
+          <EpisodeSelector
+            platform={selectedPlatform}
+            onSelect={setSelectedEpisodes}
+          />
 
           {/* Error Message */}
           {downloadStatus === "error" && errorMessage && (
