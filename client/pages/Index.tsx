@@ -22,6 +22,7 @@ export default function Index() {
   >("idle");
   const [errorMessage, setErrorMessage] = useState("");
   const [downloadedFile, setDownloadedFile] = useState<string | null>(null);
+  const [bugReportOpen, setBugReportOpen] = useState(false);
 
   const handleDownload = async () => {
     if (!url.trim()) {
