@@ -21,13 +21,16 @@ interface BrowserInfo {
   language: string;
 }
 
-export const handleBugReport: RequestHandler = async (req, res) => {
+export const handleBugReport: RequestHandler = async (
+  req: BugReportRequest,
+  res
+) => {
   try {
     // Parse FormData fields
-    const description = (req.body as any).description || "";
-    const stepsToReproduce = (req.body as any).stepsToReproduce || "";
-    const browserInfoStr = (req.body as any).browserInfo || "{}";
-    const file = (req as any).file;
+    const description = (req.body?.description as string) || "";
+    const stepsToReproduce = (req.body?.stepsToReproduce as string) || "";
+    const browserInfoStr = (req.body?.browserInfo as string) || "{}";
+    const file = req.file;
 
     // Validate input
     if (!description || !stepsToReproduce) {
