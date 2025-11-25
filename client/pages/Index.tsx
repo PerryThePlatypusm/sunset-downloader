@@ -34,8 +34,9 @@ export default function Index() {
     }
 
     try {
+      setIsDownloading(true);
       setDownloadStatus("validating");
-      setDownloadProgress(0);
+      setDownloadProgress(10);
       setErrorMessage("");
 
       const response = await fetch("/api/download", {
@@ -57,6 +58,7 @@ export default function Index() {
       }
 
       setDownloadStatus("downloading");
+      setDownloadProgress(50);
 
       const blob = await response.blob();
       const downloadUrl = window.URL.createObjectURL(blob);
@@ -68,9 +70,9 @@ export default function Index() {
       window.URL.revokeObjectURL(downloadUrl);
       document.body.removeChild(a);
 
+      setDownloadProgress(100);
       setDownloadStatus("success");
       setDownloadedFile(a.download);
-      setDownloadProgress(100);
 
       setTimeout(() => {
         setUrl("");
@@ -78,6 +80,7 @@ export default function Index() {
         setDownloadStatus("idle");
         setDownloadProgress(0);
         setDownloadedFile(null);
+        setIsDownloading(false);
       }, 3000);
     } catch (error) {
       console.error("Download error:", error);
@@ -85,6 +88,7 @@ export default function Index() {
         error instanceof Error ? error.message : "An error occurred"
       );
       setDownloadStatus("error");
+      setIsDownloading(false);
     }
   };
 
