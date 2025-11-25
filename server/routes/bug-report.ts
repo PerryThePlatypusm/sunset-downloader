@@ -51,7 +51,7 @@ export const handleBugReport: RequestHandler = async (req, res) => {
     };
 
     try {
-      browserData = JSON.parse(browserInfo);
+      browserData = JSON.parse(browserInfoStr);
     } catch (e) {
       console.error("Failed to parse browser info:", e);
     }
