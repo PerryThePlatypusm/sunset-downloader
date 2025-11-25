@@ -108,13 +108,13 @@ export default function Index() {
                 <Download className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-sunset-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">
-                  MediaFlow
-                </h1>
-                <p className="text-sunset-300 text-xs">
-                  Multi-Platform Media Downloader
-                </p>
-              </div>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-sunset-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">
+                SunsetDownloader
+              </h1>
+              <p className="text-sunset-300 text-xs">
+                Multi-Platform Media Downloader
+              </p>
+            </div>
             </div>
             <div className="hidden sm:flex items-center gap-2 text-sunset-300 text-sm">
               <Zap className="w-4 h-4" />
