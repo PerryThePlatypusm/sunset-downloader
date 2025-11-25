@@ -101,8 +101,14 @@ export default function BugReportModal({
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to submit bug report");
+        let errorMsg = "Failed to submit bug report";
+        try {
+          const error = await response.json();
+          errorMsg = error.error || errorMsg;
+        } catch {
+          errorMsg = `Server error: ${response.statusText}`;
+        }
+        throw new Error(errorMsg);
       }
 
       setSuccess(true);
