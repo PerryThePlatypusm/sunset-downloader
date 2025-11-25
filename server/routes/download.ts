@@ -37,7 +37,8 @@ const DEFAULT_QUALITY: Record<string, string> = {
 
 export const handleDownload: RequestHandler = async (req, res) => {
   try {
-    const { url, platform, quality, audioOnly } = req.body as DownloadRequest;
+    const { url, platform, quality, audioOnly, episodes } =
+      req.body as DownloadRequest;
 
     // Validate URL presence
     if (!url || typeof url !== "string" || !url.trim()) {
@@ -79,9 +80,33 @@ export const handleDownload: RequestHandler = async (req, res) => {
       });
     }
 
+    // Validate episodes for anime platforms
+    const isAnimePlatform =
+      detectedPlatform === "crunchyroll" || detectedPlatform === "hianime";
+
+    if (isAnimePlatform) {
+      if (!episodes || episodes.length === 0) {
+        return res.status(400).json({
+          error: "Please select at least one episode to download",
+        });
+      }
+
+      // Validate episode numbers
+      const validEpisodes = episodes.filter(
+        (ep) => Number.isInteger(ep) && ep > 0 && ep <= 1000
+      );
+
+      if (validEpisodes.length === 0) {
+        return res.status(400).json({
+          error: "Invalid episode numbers provided",
+        });
+      }
+    }
+
     // Simulate download processing
     const downloadType = audioOnly ? "mp3" : "mp4";
-    const fileName = `media_${Date.now()}.${downloadType}`;
+    const episodeInfo = episodes && episodes.length > 0 ? `_eps_${episodes.slice(0, 5).join("-")}` : "";
+    const fileName = `media_${Date.now()}${episodeInfo}.${downloadType}`;
 
     // Create a mock file response (in production, this would be actual media content)
     // For now, we'll simulate a successful download by returning a small blob
@@ -90,6 +115,7 @@ export const handleDownload: RequestHandler = async (req, res) => {
         platform: detectedPlatform,
         quality: selectedQuality,
         format: downloadType,
+        episodes: episodes && episodes.length > 0 ? episodes : undefined,
         timestamp: new Date().toISOString(),
         note: "This is a mock response. In production, actual media content would be served here.",
       })
