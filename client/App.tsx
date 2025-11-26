@@ -12,7 +12,7 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const AppContent = () => {
-  useTypingTitle("Sunset Downloader", 60);
+  useTypingTitle("Sunset Downloader", 100);
 
   return (
     <QueryClientProvider client={queryClient}>
