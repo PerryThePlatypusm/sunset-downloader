@@ -34,5 +34,8 @@ export function createServer() {
   app.post("/api/download", handleDownload);
   app.post("/api/validate-url", validateUrl);
 
+  // Test webhook
+  app.get("/api/test-webhook", handleTestWebhook);
+
   return app;
 }
