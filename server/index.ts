@@ -15,13 +15,11 @@ export function createServer() {
 
   // Middleware
   app.use(cors());
-
-  // Bug report route with multer (must come before json/urlencoded for file upload)
-  app.post("/api/bug-report", upload.single("attachment"), handleBugReport);
-
-  // Other JSON/form middleware
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+
+  // Bug report route with multer for file upload
+  app.post("/api/bug-report", upload.single("attachment"), handleBugReport);
 
   // Example API routes
   app.get("/api/ping", (_req, res) => {
