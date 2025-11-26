@@ -2,7 +2,7 @@ import { useEffect } from "react";
 
 export function useTypingTitle(
   fullTitle: string = "Sunset Downloader",
-  speed: number = 100
+  speed: number = 100,
 ) {
   useEffect(() => {
     let currentIndex = 0;
