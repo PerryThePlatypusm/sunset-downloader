@@ -6,6 +6,7 @@ import { handleDemo } from "./routes/demo";
 import { handleDownload, validateUrl } from "./routes/download";
 import { handleBugReport } from "./routes/bug-report";
 import { handleTestWebhook } from "./routes/test-webhook";
+import { handleDiscordGreeting } from "./routes/discord-greeting";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
