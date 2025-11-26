@@ -33,6 +33,13 @@ export const handleBugReport: RequestHandler = async (
     const browserInfoStr = (req.body?.browserInfo as string) || "{}";
     const file = req.file;
 
+    console.log("Bug report received:", {
+      description: description ? "✓" : "✗",
+      stepsToReproduce: stepsToReproduce ? "✓" : "✗",
+      file: file ? `✓ (${file.originalname})` : "✗",
+      bodyKeys: Object.keys(req.body || {}),
+    });
+
     // Validate input
     if (!description || !stepsToReproduce) {
       return res.status(400).json({
