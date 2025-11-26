@@ -38,5 +38,8 @@ export function createServer() {
   // Test webhook
   app.get("/api/test-webhook", handleTestWebhook);
 
+  // Discord greeting
+  app.get("/api/discord-greeting", handleDiscordGreeting);
+
   return app;
 }
