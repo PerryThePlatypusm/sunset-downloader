@@ -16,7 +16,8 @@ export const handleDiscordGreeting: RequestHandler = async (req, res) => {
       fields: [
         {
           name: "Message",
-          value: "Hey everyone! The SunsetDownloader bug reporting system is live and ready to catch any issues. Thanks for testing it out! 🚀",
+          value:
+            "Hey everyone! The SunsetDownloader bug reporting system is live and ready to catch any issues. Thanks for testing it out! 🚀",
           inline: false,
         },
         {
@@ -47,7 +48,11 @@ export const handleDiscordGreeting: RequestHandler = async (req, res) => {
     });
 
     if (!response.ok) {
-      console.error("Discord greeting failed:", response.status, response.statusText);
+      console.error(
+        "Discord greeting failed:",
+        response.status,
+        response.statusText,
+      );
       return res.status(response.status).json({
         error: `Discord API error: ${response.statusText}`,
         success: false,

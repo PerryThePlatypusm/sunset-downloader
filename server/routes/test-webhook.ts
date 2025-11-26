@@ -11,7 +11,8 @@ export const handleTestWebhook: RequestHandler = async (req, res) => {
 
     const testEmbed = {
       title: "✅ Webhook Connection Successful",
-      description: "The Discord webhook for SunsetDownloader bug reports is working correctly!",
+      description:
+        "The Discord webhook for SunsetDownloader bug reports is working correctly!",
       color: 0xff6b6b,
       fields: [
         {
@@ -52,7 +53,11 @@ export const handleTestWebhook: RequestHandler = async (req, res) => {
     });
 
     if (!response.ok) {
-      console.error("Discord webhook test failed:", response.status, response.statusText);
+      console.error(
+        "Discord webhook test failed:",
+        response.status,
+        response.statusText,
+      );
       return res.status(response.status).json({
         error: `Discord API error: ${response.statusText}`,
         success: false,
