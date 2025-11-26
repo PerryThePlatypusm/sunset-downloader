@@ -2,7 +2,7 @@ import { useEffect } from "react";
 
 export function useTypingTitle(
   fullTitle: string = "Sunset Downloader",
-  speed: number = 50,
+  speed: number = 120,
 ) {
   useEffect(() => {
     let currentIndex = 0;
@@ -19,32 +19,32 @@ export function useTypingTitle(
       document.title = fadeText || "Sunset Downloader";
 
       if (!isDeleting) {
-        // Typing phase - smooth with variable speed
+        // Typing phase - smooth with minimal speed variation
         if (currentIndex < fullTitle.length) {
           currentIndex++;
-          // Speed accelerates slightly toward the end
+          // Very subtle speed adjustment for ultra-smooth effect
           const adaptiveSpeed =
-            speed * (0.7 + (currentIndex / fullTitle.length) * 0.3);
+            speed * (0.95 + (currentIndex / fullTitle.length) * 0.1);
           typingTimer = setTimeout(typeTitle, adaptiveSpeed);
         } else {
           // Pause before deleting
           typingTimer = setTimeout(() => {
             isDeleting = true;
             typeTitle();
-          }, 2500);
+          }, 3000);
         }
       } else {
         // Deleting phase - smooth fade out
         if (currentIndex > 0) {
           currentIndex--;
-          // Delete faster with smooth fade
+          // Slower delete speed for smooth fade
           const deleteSpeed =
-            (speed / 2.5) * (0.8 + (currentIndex / fullTitle.length) * 0.2);
+            (speed / 2) * (0.9 + (currentIndex / fullTitle.length) * 0.1);
           typingTimer = setTimeout(typeTitle, deleteSpeed);
         } else {
           // Pause before typing again
           isDeleting = false;
-          typingTimer = setTimeout(typeTitle, 800);
+          typingTimer = setTimeout(typeTitle, 1000);
         }
       }
     };
