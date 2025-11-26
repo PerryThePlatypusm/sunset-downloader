@@ -108,11 +108,11 @@ Anonymous Report | All reports are reviewed and appreciated!
     // Send email via Resend
     if (process.env.RESEND_API_KEY) {
       try {
-        const Resend = (await import("resend")).default;
+        const { Resend } = await import("resend");
         const resend = new Resend(process.env.RESEND_API_KEY);
 
         await resend.emails.send({
-          from: "bugs@sunsetdownloader.com",
+          from: "onboarding@resend.dev",
           to: process.env.BUG_REPORT_EMAIL || "jacobperry27@gmail.com",
           subject: `🐛 Bug Report: ${description.substring(0, 50)}...`,
           html: emailContent.replace(/\n/g, "<br>"),
