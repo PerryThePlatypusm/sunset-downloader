@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import PlatformSelector from "@/components/PlatformSelector";
@@ -7,6 +7,7 @@ import SpotifyQualitySelector from "@/components/SpotifyQualitySelector";
 import EpisodeSelector from "@/components/EpisodeSelector";
 import DownloadProgress from "@/components/DownloadProgress";
 import { usePixelAnimation } from "@/hooks/use-pixel-animation";
+import { useConfetti } from "@/hooks/use-confetti";
 import {
   Download,
   Music,
@@ -18,6 +19,7 @@ import {
 
 export default function Index() {
   const createPixels = usePixelAnimation();
+  const createConfetti = useConfetti();
   const [url, setUrl] = useState("");
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
   const [downloadType, setDownloadType] = useState<"video" | "audio">("video");
@@ -30,6 +32,12 @@ export default function Index() {
   >("idle");
   const [errorMessage, setErrorMessage] = useState("");
   const [downloadedFile, setDownloadedFile] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (downloadStatus === "success") {
+      createConfetti();
+    }
+  }, [downloadStatus, createConfetti]);
 
   const handleDownload = async () => {
     if (!url.trim()) {
