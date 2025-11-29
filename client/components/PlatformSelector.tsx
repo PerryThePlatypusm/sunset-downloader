@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState } from "react";
+import { usePixelAnimation } from "@/hooks/use-pixel-animation";
 import {
   Youtube,
   Music,
@@ -116,16 +117,19 @@ export default function PlatformSelector({
   selectedPlatform,
   onSelectPlatform,
 }: PlatformSelectorProps) {
+  const createPixels = usePixelAnimation();
+
   return (
     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
       {platforms.map((platform) => (
         <button
           key={platform.id}
-          onClick={() =>
+          onClick={(e) => {
+            createPixels(e);
             onSelectPlatform(
               selectedPlatform === platform.id ? null : platform.id,
-            )
-          }
+            );
+          }}
           className={`p-3 rounded-lg border-2 transition-all flex flex-col items-center justify-center gap-2 ${
             selectedPlatform === platform.id
               ? "border-sunset-500 bg-sunset-500/20"
