@@ -6,6 +6,7 @@ import QualitySelector from "@/components/QualitySelector";
 import SpotifyQualitySelector from "@/components/SpotifyQualitySelector";
 import EpisodeSelector from "@/components/EpisodeSelector";
 import DownloadProgress from "@/components/DownloadProgress";
+import { usePixelAnimation } from "@/hooks/use-pixel-animation";
 import {
   Download,
   Music,
@@ -16,6 +17,7 @@ import {
 } from "lucide-react";
 
 export default function Index() {
+  const createPixels = usePixelAnimation();
   const [url, setUrl] = useState("");
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
   const [downloadType, setDownloadType] = useState<"video" | "audio">("video");
@@ -164,6 +166,7 @@ export default function Index() {
                   setErrorMessage("");
                 }}
                 onKeyPress={(e) => e.key === "Enter" && handleDownload()}
+                onClick={createPixels}
                 className="bg-sunset-900/50 border-sunset-700 text-white placeholder:text-sunset-500 focus:border-sunset-500 focus:ring-sunset-500"
                 disabled={isDownloading}
               />
@@ -177,7 +180,10 @@ export default function Index() {
             </label>
             <div className="grid grid-cols-2 gap-3">
               <button
-                onClick={() => setDownloadType("video")}
+                onClick={(e) => {
+                  createPixels(e);
+                  setDownloadType("video");
+                }}
                 className={`p-4 rounded-lg border-2 transition-all flex items-center justify-center gap-2 font-semibold ${
                   downloadType === "video"
                     ? "border-sunset-500 bg-sunset-500/20 text-sunset-200"
@@ -188,7 +194,10 @@ export default function Index() {
                 Video
               </button>
               <button
-                onClick={() => setDownloadType("audio")}
+                onClick={(e) => {
+                  createPixels(e);
+                  setDownloadType("audio");
+                }}
                 className={`p-4 rounded-lg border-2 transition-all flex items-center justify-center gap-2 font-semibold ${
                   downloadType === "audio"
                     ? "border-sunset-500 bg-sunset-500/20 text-sunset-200"
@@ -281,7 +290,10 @@ export default function Index() {
 
           {/* Download Button */}
           <Button
-            onClick={handleDownload}
+            onClick={(e) => {
+              createPixels(e);
+              handleDownload();
+            }}
             disabled={
               isDownloading ||
               !url.trim() ||
