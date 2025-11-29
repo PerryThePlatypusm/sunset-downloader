@@ -116,16 +116,18 @@ Anonymous Report | All reports are reviewed and appreciated!
     if (process.env.MAILERSEND_API_KEY) {
       try {
         const mailersendApiKey = process.env.MAILERSEND_API_KEY;
-        const recipientEmail = process.env.BUG_REPORT_EMAIL || "jacobperry27@gmail.com";
+        const recipientEmail =
+          process.env.BUG_REPORT_EMAIL || "jacobperry27@gmail.com";
 
         // Get verified sender from environment or use test sender
-        const senderEmail = process.env.MAILERSEND_SENDER || "no-reply@mailersend.net";
+        const senderEmail =
+          process.env.MAILERSEND_SENDER || "no-reply@mailersend.net";
         const senderName = "SunsetDownloader Bug Reports";
 
         const response = await fetch("https://api.mailersend.com/v1/email", {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${mailersendApiKey}`,
+            Authorization: `Bearer ${mailersendApiKey}`,
             "Content-Type": "application/json",
             "X-Requested-With": "XMLHttpRequest",
           },
