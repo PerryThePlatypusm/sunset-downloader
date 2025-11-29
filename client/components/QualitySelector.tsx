@@ -1,4 +1,5 @@
 import React from "react";
+import { usePixelAnimation } from "@/hooks/use-pixel-animation";
 
 interface QualitySelectorProps {
   quality: string;
@@ -34,13 +35,17 @@ export default function QualitySelector({
   type,
 }: QualitySelectorProps) {
   const qualities = type === "video" ? videoQualities : audioQualities;
+  const createPixels = usePixelAnimation();
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
       {qualities.map((q) => (
         <button
           key={q.id}
-          onClick={() => onQualityChange(q.id)}
+          onClick={(e) => {
+            createPixels(e);
+            onQualityChange(q.id);
+          }}
           className={`p-3 rounded-lg border-2 transition-all text-left group ${
             quality === q.id
               ? "border-sunset-500 bg-gradient-to-br from-sunset-500/30 to-sunset-500/10"
