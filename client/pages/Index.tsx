@@ -6,7 +6,6 @@ import QualitySelector from "@/components/QualitySelector";
 import SpotifyQualitySelector from "@/components/SpotifyQualitySelector";
 import EpisodeSelector from "@/components/EpisodeSelector";
 import DownloadProgress from "@/components/DownloadProgress";
-import BugReportModal from "@/components/BugReportModal";
 import {
   Download,
   Music,
@@ -14,7 +13,6 @@ import {
   Zap,
   Check,
   AlertCircle,
-  Bug,
 } from "lucide-react";
 
 export default function Index() {
@@ -30,7 +28,6 @@ export default function Index() {
   >("idle");
   const [errorMessage, setErrorMessage] = useState("");
   const [downloadedFile, setDownloadedFile] = useState<string | null>(null);
-  const [bugReportOpen, setBugReportOpen] = useState(false);
 
   const handleDownload = async () => {
     if (!url.trim()) {
@@ -365,24 +362,12 @@ export default function Index() {
       {/* Footer */}
       <footer className="border-t border-sunset-700/50 backdrop-blur-md bg-sunset-900/50 mt-16">
         <div className="max-w-6xl mx-auto px-4 py-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
-            <p className="text-sunset-400 text-sm">
-              © 2024 SunsetDownloader. Download responsibly and respect
-              copyright laws.
-            </p>
-            <button
-              onClick={() => setBugReportOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-sunset-500/20 hover:bg-sunset-500/30 text-sunset-300 hover:text-sunset-200 transition-colors font-medium"
-            >
-              <Bug className="w-4 h-4" />
-              Report a Bug
-            </button>
-          </div>
+          <p className="text-sunset-400 text-sm text-center">
+            © 2024 SunsetDownloader. Download responsibly and respect
+            copyright laws.
+          </p>
         </div>
       </footer>
-
-      {/* Bug Report Modal */}
-      <BugReportModal open={bugReportOpen} onOpenChange={setBugReportOpen} />
     </div>
   );
 }
