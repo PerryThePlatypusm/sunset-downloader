@@ -1,0 +1,14 @@
+node_modules
+.git
+.gitignore
+README.md
+.env.example
+AGENTS.md
+BUG_REPORTING_SETUP.md
+.DS_Store
+*.log
+pnpm-lock.yaml
+.vscode
+.idea
+dist
+.vercel
