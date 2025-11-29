@@ -28,6 +28,8 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@types/vercel__node": "^15.13.10",
+    "@vercel/node": "^3.4.0",
     "@hookform/resolvers": "^5.2.1",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
