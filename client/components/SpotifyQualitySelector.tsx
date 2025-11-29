@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { usePixelAnimation } from "@/hooks/use-pixel-animation";
 import { Music, Zap } from "lucide-react";
 
 interface SpotifyQualitySelectorProps {
@@ -10,9 +11,11 @@ export default function SpotifyQualitySelector({
   quality,
   onQualityChange,
 }: SpotifyQualitySelectorProps) {
+  const createPixels = usePixelAnimation();
   const [animate, setAnimate] = useState(false);
 
-  const handleQualityChange = (newQuality: string) => {
+  const handleQualityChange = (newQuality: string, event: React.MouseEvent) => {
+    createPixels(event);
     setAnimate(true);
     onQualityChange(newQuality);
     setTimeout(() => setAnimate(false), 400);
@@ -28,7 +31,7 @@ export default function SpotifyQualitySelector({
               ? "border-sunset-500 bg-sunset-500/20"
               : "border-sunset-700/50 bg-sunset-900/30 hover:border-sunset-600"
           }`}
-          onClick={() => handleQualityChange("standard")}
+          onClick={(e) => handleQualityChange("standard", e)}
         >
           <div className="flex items-center gap-2 mb-2">
             <Music className="w-5 h-5 text-sunset-400 group-hover:text-sunset-300" />
@@ -44,7 +47,7 @@ export default function SpotifyQualitySelector({
               ? "border-pink-500 bg-pink-500/20"
               : "border-sunset-700/50 bg-sunset-900/30 hover:border-sunset-600"
           }`}
-          onClick={() => handleQualityChange("lossless")}
+          onClick={(e) => handleQualityChange("lossless", e)}
         >
           <div className="flex items-center gap-2 mb-2">
             <Zap className="w-5 h-5 text-pink-400 group-hover:text-pink-300" />
