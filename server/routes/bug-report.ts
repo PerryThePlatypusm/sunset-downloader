@@ -112,23 +112,50 @@ ${fileUrl ? `**Attachment:** ${fileUrl}` : "No attachment"}
 Anonymous Report | All reports are reviewed and appreciated!
     `;
 
-    // Send email via Resend
-    if (process.env.RESEND_API_KEY) {
+    // Send email via MailerSend
+    if (process.env.MAILERSEND_API_KEY) {
       try {
-        const { Resend } = await import("resend");
-        const resend = new Resend(process.env.RESEND_API_KEY);
+        const mailersendApiKey = process.env.MAILERSEND_API_KEY;
+        const recipientEmail = process.env.BUG_REPORT_EMAIL || "jacobperry27@gmail.com";
 
-        await resend.emails.send({
-          from: "onboarding@resend.dev",
-          to: process.env.BUG_REPORT_EMAIL || "jacobperry27@gmail.com",
-          subject: `🐛 Bug Report: ${description.substring(0, 50)}...`,
-          html: emailContent.replace(/\n/g, "<br>"),
+        // Get verified sender from environment or use test sender
+        const senderEmail = process.env.MAILERSEND_SENDER || "no-reply@mailersend.net";
+        const senderName = "SunsetDownloader Bug Reports";
+
+        const response = await fetch("https://api.mailersend.com/v1/email", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${mailersendApiKey}`,
+            "Content-Type": "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+          },
+          body: JSON.stringify({
+            from: {
+              email: senderEmail,
+              name: senderName,
+            },
+            to: [
+              {
+                email: recipientEmail,
+              },
+            ],
+            subject: `🐛 Bug Report: ${description.substring(0, 50)}...`,
+            html: emailContent.replace(/\n/g, "<br>"),
+            reply_to: {
+              email: "noreply@mailersend.net",
+            },
+          }),
         });
+
+        if (!response.ok) {
+          const error = await response.text();
+          console.error("MailerSend error:", error);
+        }
       } catch (error) {
         console.error("Email send failed:", error);
       }
     } else {
-      console.warn("RESEND_API_KEY not configured");
+      console.warn("MAILERSEND_API_KEY not configured");
     }
 
     // Send to Discord webhook if configured
