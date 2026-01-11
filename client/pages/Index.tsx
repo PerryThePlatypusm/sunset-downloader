@@ -422,7 +422,7 @@ export default function Index() {
       <footer className="border-t border-sunset-700/50 backdrop-blur-md bg-sunset-900/50 mt-16">
         <div className="max-w-6xl mx-auto px-4 py-8">
           <p className="text-sunset-400 text-sm text-center">
-            © 2024 SunsetDownloader. Download responsibly and respect copyright
+            © 2026 SunsetDownloader. Download responsibly and respect copyright
             laws.
           </p>
         </div>
