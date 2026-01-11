@@ -58,9 +58,9 @@ export default function Credits() {
           <div className="space-y-4">
             <div className="flex items-center justify-between p-4 bg-sunset-900/30 rounded-lg border border-sunset-700/50">
               <div>
-                <p className="text-sunset-200 font-semibold">Jacob Perry</p>
+                <p className="text-sunset-200 font-semibold">Clover</p>
                 <p className="text-sunset-400 text-sm">
-                  SunsetDownloader Developer
+                  SunsetDownloader Creator
                 </p>
               </div>
               <a
@@ -283,8 +283,7 @@ export default function Credits() {
         {/* Footer */}
         <div className="mt-12 pt-8 border-t border-sunset-700/50 text-center">
           <p className="text-sunset-400 text-sm">
-            © 2026 SunsetDownloader. All rights reserved. Made with ❤️ by Jacob
-            Perry
+            © 2026 SunsetDownloader. All rights reserved. Made with ❤️ by Clover
           </p>
         </div>
       </main>
