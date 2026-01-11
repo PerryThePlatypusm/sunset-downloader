@@ -136,18 +136,15 @@ export const handleDownload: RequestHandler = async (req, res) => {
     } else {
       // MP4 header + mock data (about 50KB)
       const mp4Header = Buffer.from([
-        0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70,
-        0x69, 0x73, 0x6f, 0x6d, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d,
+        0x00, 0x00, 0x00, 0x00,
       ]);
       const mockData = Buffer.alloc(51200, 0x00);
       mockContent = Buffer.concat([mp4Header, mockData]);
     }
 
     res.setHeader("Content-Type", audioOnly ? "audio/mpeg" : "video/mp4");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${fileName}"`,
-    );
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
     res.setHeader("Content-Length", mockContent.length.toString());
     res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     res.setHeader("Pragma", "no-cache");
