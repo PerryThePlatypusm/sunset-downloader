@@ -44,15 +44,23 @@ export default function Index() {
   const handleDownload = async () => {
     const trimmedUrl = url.trim();
 
+    // Clear previous error immediately when starting a new download attempt
+    setErrorMessage("");
+    setIsDownloading(true);
+    setDownloadStatus("validating");
+    setDownloadProgress(10);
+
     if (!trimmedUrl) {
       setErrorMessage("Please enter a URL");
       setDownloadStatus("error");
+      setIsDownloading(false);
       return;
     }
 
     if (trimmedUrl.length > 2048) {
       setErrorMessage("URL is too long");
       setDownloadStatus("error");
+      setIsDownloading(false);
       return;
     }
 
@@ -61,14 +69,11 @@ export default function Index() {
     if (isAnimePlatform && selectedEpisodes.length === 0) {
       setErrorMessage("Please select at least one episode to download");
       setDownloadStatus("error");
+      setIsDownloading(false);
       return;
     }
 
     try {
-      setIsDownloading(true);
-      setDownloadStatus("validating");
-      setDownloadProgress(10);
-      setErrorMessage("");
 
       const requestBody = {
         url: trimmedUrl,
