@@ -33,8 +33,16 @@ export default function Index() {
   }, [downloadStatus, createConfetti]);
 
   const handleDownload = async () => {
-    if (!url.trim()) {
+    const trimmedUrl = url.trim();
+
+    if (!trimmedUrl) {
       setErrorMessage("Please enter a URL");
+      setDownloadStatus("error");
+      return;
+    }
+
+    if (trimmedUrl.length > 2048) {
+      setErrorMessage("URL is too long");
       setDownloadStatus("error");
       return;
     }
