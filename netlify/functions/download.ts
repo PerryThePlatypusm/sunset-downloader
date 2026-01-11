@@ -1,0 +1,196 @@
+import { Handler } from "@netlify/functions";
+import { normalizeUrl, isValidUrl, detectPlatform } from "../../server/utils/urlUtils";
+
+const SUPPORTED_PLATFORMS = [
+  "youtube",
+  "spotify",
+  "instagram",
+  "twitter",
+  "tiktok",
+  "soundcloud",
+  "facebook",
+  "twitch",
+  "crunchyroll",
+  "hianime",
+  "reddit",
+  "pinterest",
+];
+
+const DEFAULT_QUALITY: Record<string, string> = {
+  video: "1080",
+  audio: "320",
+};
+
+interface DownloadRequest {
+  url: string;
+  platform?: string;
+  quality?: string;
+  audioOnly?: boolean;
+  episodes?: number[];
+}
+
+const handler: Handler = async (event, context) => {
+  if (event.httpMethod !== "POST") {
+    return {
+      statusCode: 405,
+      body: JSON.stringify({ error: "Method not allowed" }),
+    };
+  }
+
+  try {
+    const body: DownloadRequest = JSON.parse(event.body || "{}");
+    const { url, platform, quality, audioOnly, episodes } = body;
+
+    // Validate URL presence
+    if (!url || typeof url !== "string" || !url.trim()) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "URL is required" }),
+      };
+    }
+
+    if (url.length > 2048) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "URL is too long" }),
+      };
+    }
+
+    // Normalize and validate URL format
+    let normalizedUrl: string;
+    try {
+      normalizedUrl = normalizeUrl(url);
+    } catch (error) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "Invalid URL format" }),
+      };
+    }
+
+    if (!isValidUrl(normalizedUrl)) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "Invalid URL format" }),
+      };
+    }
+
+    // Detect platform if not provided
+    let detectedPlatform = platform;
+    if (!detectedPlatform) {
+      detectedPlatform = detectPlatform(normalizedUrl);
+    }
+
+    // Validate platform
+    if (!detectedPlatform || !SUPPORTED_PLATFORMS.includes(detectedPlatform)) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({
+          error: `Unsupported platform. Supported: ${SUPPORTED_PLATFORMS.join(", ")}`,
+        }),
+      };
+    }
+
+    // Validate quality
+    const qualityType = audioOnly ? "audio" : "video";
+    const selectedQuality = quality || DEFAULT_QUALITY[qualityType];
+
+    if (!selectedQuality) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({
+          error: `Invalid quality specified for ${qualityType}`,
+        }),
+      };
+    }
+
+    // Special validation for Spotify
+    if (detectedPlatform === "spotify" && !audioOnly) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({
+          error: "Spotify only supports audio downloads (not video)",
+        }),
+      };
+    }
+
+    // Validate episodes for anime platforms
+    const isAnimePlatform =
+      detectedPlatform === "crunchyroll" || detectedPlatform === "hianime";
+
+    if (isAnimePlatform) {
+      if (!episodes || episodes.length === 0) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({
+            error: "Please select at least one episode to download",
+          }),
+        };
+      }
+
+      const validEpisodes = episodes.filter(
+        (ep) => Number.isInteger(ep) && ep > 0 && ep <= 1000,
+      );
+
+      if (validEpisodes.length === 0) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({
+            error: "Invalid episode numbers provided",
+          }),
+        };
+      }
+    }
+
+    // Generate downloadable mock content
+    const downloadType = audioOnly ? "mp3" : "mp4";
+    const episodeInfo =
+      episodes && episodes.length > 0
+        ? `_eps_${episodes.slice(0, 5).join("-")}`
+        : "";
+    const fileName = `media_${Date.now()}${episodeInfo}.${downloadType}`;
+
+    // Create proper mock file content
+    let mockContent: Buffer;
+
+    if (audioOnly) {
+      // MP3 header + some mock data (about 10KB)
+      const mp3Header = Buffer.from([
+        0xff, 0xfb, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00,
+      ]);
+      const mockData = Buffer.alloc(10240, 0x00);
+      mockContent = Buffer.concat([mp3Header, mockData]);
+    } else {
+      // MP4 header + mock data (about 50KB)
+      const mp4Header = Buffer.from([
+        0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d,
+        0x00, 0x00, 0x00, 0x00,
+      ]);
+      const mockData = Buffer.alloc(51200, 0x00);
+      mockContent = Buffer.concat([mp4Header, mockData]);
+    }
+
+    return {
+      statusCode: 200,
+      headers: {
+        "Content-Type": audioOnly ? "audio/mpeg" : "video/mp4",
+        "Content-Disposition": `attachment; filename="${fileName}"`,
+        "Content-Length": mockContent.length.toString(),
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0",
+      },
+      body: mockContent.toString("base64"),
+      isBase64Encoded: true,
+    };
+  } catch (error) {
+    console.error("Download error:", error);
+    const errorMessage =
+      error instanceof Error ? error.message : "An unexpected error occurred";
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: errorMessage }),
+    };
+  }
+};
+
+export { handler };
