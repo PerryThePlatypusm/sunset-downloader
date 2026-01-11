@@ -311,12 +311,7 @@ export default function Index() {
               createPixels(e);
               handleDownload();
             }}
-            disabled={
-              isDownloading ||
-              !url.trim() ||
-              downloadStatus === "downloading" ||
-              downloadStatus === "success"
-            }
+            disabled={isDownloading || !url.trim()}
             className={`w-full py-6 font-semibold text-lg rounded-lg transition-all flex items-center justify-center gap-2 ${
               downloadStatus === "success"
                 ? "bg-green-500/50 hover:bg-green-500/60 text-green-100"
