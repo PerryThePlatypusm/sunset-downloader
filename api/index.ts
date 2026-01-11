@@ -1,5 +1,5 @@
 import "dotenv/config";
-import express from "express";
+import express, { Request, Response } from "express";
 import cors from "cors";
 import multer from "multer";
 import { handleDemo } from "../server/routes/demo";
@@ -17,7 +17,7 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 // Health check endpoint
-app.get("/api/ping", (_req, res) => {
+app.get("/api/ping", (_req: Request, res: Response) => {
   const ping = process.env.PING_MESSAGE ?? "pong";
   res.json({
     message: ping,
@@ -27,16 +27,24 @@ app.get("/api/ping", (_req, res) => {
 });
 
 // API Routes (with /api prefix for Vercel)
-app.post("/api/bug-report", upload.single("attachment"), handleBugReport);
+app.post(
+  "/api/bug-report",
+  upload.single("attachment"),
+  handleBugReport,
+);
 app.get("/api/demo", handleDemo);
 app.post("/api/download", handleDownload);
 app.post("/api/validate-url", validateUrl);
 app.get("/api/test-webhook", handleTestWebhook);
 app.get("/api/discord-greeting", handleDiscordGreeting);
 
-// 404 handler
-app.use((_req, res) => {
-  res.status(404).json({ error: "API endpoint not found" });
+// Fallback routes for any other /api/* requests
+app.all("/api/*", (_req: Request, res: Response) => {
+  res.status(404).json({
+    error: "API endpoint not found",
+    path: _req.path,
+    method: _req.method,
+  });
 });
 
 // Export Express app for Vercel
