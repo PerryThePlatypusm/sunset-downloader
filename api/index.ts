@@ -11,19 +11,32 @@ import { handleDiscordGreeting } from "../server/routes/discord-greeting";
 const upload = multer({ storage: multer.memoryStorage() });
 const app = express();
 
+// Middleware
 app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-app.post("/api/bug-report", upload.single("attachment"), handleBugReport);
+// Health check endpoint
 app.get("/api/ping", (_req, res) => {
-  const ping = process.env.PING_MESSAGE ?? "ping";
-  res.json({ message: ping });
+  const ping = process.env.PING_MESSAGE ?? "pong";
+  res.json({ message: ping, status: "ok", timestamp: new Date().toISOString() });
 });
+
+// API Routes
+app.post("/api/bug-report", upload.single("attachment"), handleBugReport);
 app.get("/api/demo", handleDemo);
 app.post("/api/download", handleDownload);
 app.post("/api/validate-url", validateUrl);
 app.get("/api/test-webhook", handleTestWebhook);
 app.get("/api/discord-greeting", handleDiscordGreeting);
 
+// 404 handler for API routes
+app.use("/api", (_req, res) => {
+  res.status(404).json({ error: "API endpoint not found" });
+});
+
+// Export for Vercel
 export default app;
+
+// Also export as a named export for compatibility
+export const handler = app;
