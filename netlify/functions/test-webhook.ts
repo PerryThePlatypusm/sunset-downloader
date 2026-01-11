@@ -83,7 +83,8 @@ const handler: Handler = async (event, context) => {
     return {
       statusCode: 500,
       body: JSON.stringify({
-        error: error instanceof Error ? error.message : "Failed to test webhook",
+        error:
+          error instanceof Error ? error.message : "Failed to test webhook",
         success: false,
       }),
     };

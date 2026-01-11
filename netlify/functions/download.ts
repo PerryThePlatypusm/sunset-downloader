@@ -1,5 +1,9 @@
 import { Handler } from "@netlify/functions";
-import { normalizeUrl, isValidUrl, detectPlatform } from "../../server/utils/urlUtils";
+import {
+  normalizeUrl,
+  isValidUrl,
+  detectPlatform,
+} from "../../server/utils/urlUtils";
 
 const SUPPORTED_PLATFORMS = [
   "youtube",
@@ -176,8 +180,8 @@ const handler: Handler = async (event, context) => {
         "Content-Disposition": `attachment; filename="${fileName}"`,
         "Content-Length": mockContent.length.toString(),
         "Cache-Control": "no-cache, no-store, must-revalidate",
-        "Pragma": "no-cache",
-        "Expires": "0",
+        Pragma: "no-cache",
+        Expires: "0",
       },
       body: mockContent.toString("base64"),
       isBase64Encoded: true,

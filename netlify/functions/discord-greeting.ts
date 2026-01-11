@@ -78,7 +78,8 @@ const handler: Handler = async (event, context) => {
     return {
       statusCode: 500,
       body: JSON.stringify({
-        error: error instanceof Error ? error.message : "Failed to send greeting",
+        error:
+          error instanceof Error ? error.message : "Failed to send greeting",
         success: false,
       }),
     };
