@@ -27,11 +27,7 @@ app.get("/api/ping", (_req: Request, res: Response) => {
 });
 
 // API Routes (with /api prefix for Vercel)
-app.post(
-  "/api/bug-report",
-  upload.single("attachment"),
-  handleBugReport,
-);
+app.post("/api/bug-report", upload.single("attachment"), handleBugReport);
 app.get("/api/demo", handleDemo);
 app.post("/api/download", handleDownload);
 app.post("/api/validate-url", validateUrl);
