@@ -32,6 +32,15 @@ export default function Index() {
     }
   }, [downloadStatus, createConfetti]);
 
+  // Reset quality to sensible default when download type changes
+  useEffect(() => {
+    if (downloadType === "video") {
+      setQuality("1080");
+    } else {
+      setQuality("320");
+    }
+  }, [downloadType]);
+
   const handleDownload = async () => {
     const trimmedUrl = url.trim();
 
