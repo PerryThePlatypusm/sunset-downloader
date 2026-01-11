@@ -59,7 +59,9 @@ export default function Credits() {
             <div className="flex items-center justify-between p-4 bg-sunset-900/30 rounded-lg border border-sunset-700/50">
               <div>
                 <p className="text-sunset-200 font-semibold">Jacob Perry</p>
-                <p className="text-sunset-400 text-sm">SunsetDownloader Developer</p>
+                <p className="text-sunset-400 text-sm">
+                  SunsetDownloader Developer
+                </p>
               </div>
               <a
                 href="https://guns.lol/clover"
@@ -76,7 +78,9 @@ export default function Credits() {
 
         {/* Technologies Section */}
         <div className="bg-gradient-to-br from-sunset-800/50 to-sunset-800/30 backdrop-blur-xl border border-sunset-700/50 rounded-2xl p-8 shadow-2xl shadow-sunset-900/50 mb-8">
-          <h3 className="text-2xl font-bold text-white mb-6">Technologies Used</h3>
+          <h3 className="text-2xl font-bold text-white mb-6">
+            Technologies Used
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Frontend */}
             <div className="space-y-3">
@@ -191,7 +195,9 @@ export default function Credits() {
 
         {/* APIs & Services Section */}
         <div className="bg-gradient-to-br from-sunset-800/50 to-sunset-800/30 backdrop-blur-xl border border-sunset-700/50 rounded-2xl p-8 shadow-2xl shadow-sunset-900/50 mb-8">
-          <h3 className="text-2xl font-bold text-white mb-6">APIs & Services</h3>
+          <h3 className="text-2xl font-bold text-white mb-6">
+            APIs & Services
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <a
               href="https://www.mailersend.com"
