@@ -61,45 +61,65 @@ export default function Index() {
       setDownloadProgress(10);
       setErrorMessage("");
 
+      const requestBody = {
+        url: trimmedUrl,
+        platform: selectedPlatform || undefined,
+        quality: quality || undefined,
+        audioOnly: downloadType === "audio",
+        episodes: selectedEpisodes.length > 0 ? selectedEpisodes : undefined,
+      };
+
       const response = await fetch("/api/download", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          url: url.trim(),
-          platform: selectedPlatform,
-          quality,
-          audioOnly: downloadType === "audio",
-          episodes: selectedEpisodes.length > 0 ? selectedEpisodes : undefined,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
+        let errorMessage = `Download failed with status ${response.status}`;
         try {
-          const error = await response.json();
-          throw new Error(
-            error.error || `Download failed with status ${response.status}`,
-          );
-        } catch (parseError) {
-          throw new Error(
-            `Download failed with status ${response.status}: ${response.statusText}`,
-          );
+          const errorData = await response.json();
+          if (errorData.error) {
+            errorMessage = errorData.error;
+          }
+        } catch {
+          // If response can't be parsed as JSON, use status text
+          if (response.statusText) {
+            errorMessage = `${response.status} ${response.statusText}`;
+          }
         }
+        throw new Error(errorMessage);
+      }
+
+      // Check if response has content
+      const contentLength = response.headers.get("content-length");
+      if (contentLength === "0") {
+        throw new Error("Server returned empty response. Please try again.");
       }
 
       setDownloadStatus("downloading");
       setDownloadProgress(50);
 
       const blob = await response.blob();
+
+      if (blob.size === 0) {
+        throw new Error("Downloaded file is empty. Please try again.");
+      }
+
       const downloadUrl = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = downloadUrl;
       a.download = `media_${Date.now()}.${downloadType === "audio" ? "mp3" : "mp4"}`;
       document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(downloadUrl);
-      document.body.removeChild(a);
+
+      try {
+        a.click();
+      } finally {
+        window.URL.revokeObjectURL(downloadUrl);
+        document.body.removeChild(a);
+      }
 
       setDownloadProgress(100);
       setDownloadStatus("success");
