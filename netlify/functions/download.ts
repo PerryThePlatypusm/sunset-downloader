@@ -1,4 +1,4 @@
-import { Handler } from "@netlify/functions";
+import type { Handler } from "@netlify/functions";
 import {
   normalizeUrl,
   isValidUrl,
@@ -33,7 +33,7 @@ interface DownloadRequest {
   episodes?: number[];
 }
 
-const handler: Handler = async (event, context) => {
+const handler: Handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return {
       statusCode: 405,

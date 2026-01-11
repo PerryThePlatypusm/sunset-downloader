@@ -1,6 +1,6 @@
-import { Handler } from "@netlify/functions";
+import type { Handler } from "@netlify/functions";
 
-const handler: Handler = async (event, context) => {
+const handler: Handler = async () => {
   try {
     if (!process.env.DISCORD_WEBHOOK_URL) {
       return {
