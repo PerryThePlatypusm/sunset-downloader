@@ -17,7 +17,7 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 // Health check endpoint
-app.get("/ping", (_req, res) => {
+app.get("/api/ping", (_req, res) => {
   const ping = process.env.PING_MESSAGE ?? "pong";
   res.json({
     message: ping,
@@ -26,13 +26,13 @@ app.get("/ping", (_req, res) => {
   });
 });
 
-// API Routes (without /api prefix since Vercel adds it automatically)
-app.post("/bug-report", upload.single("attachment"), handleBugReport);
-app.get("/demo", handleDemo);
-app.post("/download", handleDownload);
-app.post("/validate-url", validateUrl);
-app.get("/test-webhook", handleTestWebhook);
-app.get("/discord-greeting", handleDiscordGreeting);
+// API Routes (with /api prefix for Vercel)
+app.post("/api/bug-report", upload.single("attachment"), handleBugReport);
+app.get("/api/demo", handleDemo);
+app.post("/api/download", handleDownload);
+app.post("/api/validate-url", validateUrl);
+app.get("/api/test-webhook", handleTestWebhook);
+app.get("/api/discord-greeting", handleDiscordGreeting);
 
 // 404 handler
 app.use((_req, res) => {
