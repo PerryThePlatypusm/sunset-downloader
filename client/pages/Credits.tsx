@@ -283,7 +283,8 @@ export default function Credits() {
         {/* Footer */}
         <div className="mt-12 pt-8 border-t border-sunset-700/50 text-center">
           <p className="text-sunset-400 text-sm">
-            © 2026 SunsetDownloader. All rights reserved. Made with ❤️ by Clover
+            © 2026 SunsetDownloader. All rights reserved. Made with ❤️ by
+            Clover
           </p>
         </div>
       </main>
