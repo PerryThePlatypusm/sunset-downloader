@@ -75,13 +75,20 @@ export const handleDownload: RequestHandler = async (req, res) => {
     }
 
     // Validate quality
-    const selectedQuality =
-      quality || DEFAULT_QUALITY[audioOnly ? "audio" : "video"];
+    const qualityType = audioOnly ? "audio" : "video";
+    const selectedQuality = quality || DEFAULT_QUALITY[qualityType];
+
+    // Validate quality format
+    if (!selectedQuality) {
+      return res.status(400).json({
+        error: `Invalid quality specified for ${qualityType}`,
+      });
+    }
 
     // Special validation for Spotify
     if (detectedPlatform === "spotify" && !audioOnly) {
       return res.status(400).json({
-        error: "Spotify requires audio-only download",
+        error: "Spotify only supports audio downloads (not video)",
       });
     }
 
