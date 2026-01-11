@@ -39,8 +39,5 @@ app.use("/api", (_req, res) => {
   res.status(404).json({ error: "API endpoint not found" });
 });
 
-// Export for Vercel
+// Export for Vercel serverless function
 export default app;
-
-// Also export as a named export for compatibility
-export const handler = app;
