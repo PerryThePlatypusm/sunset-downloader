@@ -1,5 +1,6 @@
 export const PLATFORM_PATTERNS: Record<string, RegExp> = {
-  youtube: /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)[\w-]{10,}/i,
+  youtube:
+    /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)[\w-]{10,}/i,
   spotify:
     /(?:https?:\/\/)?(?:www\.)?spotify\.com\/(?:track|album|playlist)\/[\w]+/i,
   instagram:
@@ -11,7 +12,8 @@ export const PLATFORM_PATTERNS: Record<string, RegExp> = {
   soundcloud: /(?:https?:\/\/)?(?:www\.)?soundcloud\.com\/[\w-]+\/[\w-]+/i,
   facebook:
     /(?:https?:\/\/)?(?:www\.)?facebook\.com\/(?:watch\?v=|video\.php\?v=|watch\/\?v=)[\w]+/i,
-  twitch: /(?:https?:\/\/)?(?:www\.)?twitch\.tv\/(?:videos\/|[\w]+\/clip\/|[\w]+\/clips\/)?[\w-]+/i,
+  twitch:
+    /(?:https?:\/\/)?(?:www\.)?twitch\.tv\/(?:videos\/|[\w]+\/clip\/|[\w]+\/clips\/)?[\w-]+/i,
   crunchyroll:
     /(?:https?:\/\/)?(?:www\.)?crunchyroll\.com\/(?:series|watch)\/[\w-]+/i,
   hianime: /(?:https?:\/\/)?(?:www\.)?hianime\.to\/(?:anime|watch)\/[\w-]+/i,

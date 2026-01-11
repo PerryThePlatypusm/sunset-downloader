@@ -75,7 +75,6 @@ export default function Index() {
     }
 
     try {
-
       const requestBody = {
         url: trimmedUrl,
         platform: selectedPlatform || undefined,

@@ -19,7 +19,11 @@ app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 // Health check endpoint
 app.get("/api/ping", (_req, res) => {
   const ping = process.env.PING_MESSAGE ?? "pong";
-  res.json({ message: ping, status: "ok", timestamp: new Date().toISOString() });
+  res.json({
+    message: ping,
+    status: "ok",
+    timestamp: new Date().toISOString(),
+  });
 });
 
 // API Routes
