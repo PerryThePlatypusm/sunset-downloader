@@ -1,22 +1,22 @@
 export const PLATFORM_PATTERNS: Record<string, RegExp> = {
-  youtube: /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/|youtu\.be\/)[\w-]+/i,
+  youtube: /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)[\w-]{10,}/i,
   spotify:
     /(?:https?:\/\/)?(?:www\.)?spotify\.com\/(?:track|album|playlist)\/[\w]+/i,
   instagram:
-    /(?:https?:\/\/)?(?:www\.)?instagram\.com\/(?:p|reel|stories)\/[\w-]+/i,
+    /(?:https?:\/\/)?(?:www\.)?instagram\.com\/(?:p|reel|stories|tv)\/[\w-]+/i,
   twitter:
-    /(?:https?:\/\/)?(?:www\.)?(?:twitter\.com|x\.com)\/\w+\/status\/\d+/i,
+    /(?:https?:\/\/)?(?:www\.)?(?:twitter\.com|x\.com)\/[\w]+\/status\/\d+/i,
   tiktok:
     /(?:https?:\/\/)?(?:www\.)?(?:tiktok\.com\/@[\w.]+\/video\/|vm\.tiktok\.com\/)[\w]+/i,
   soundcloud: /(?:https?:\/\/)?(?:www\.)?soundcloud\.com\/[\w-]+\/[\w-]+/i,
   facebook:
-    /(?:https?:\/\/)?(?:www\.)?facebook\.com\/(?:watch\?v=|video\.php\?v=)[\w]+/i,
-  twitch: /(?:https?:\/\/)?(?:www\.)?twitch\.tv\/(?:videos\/|[\w]+\/)/i,
+    /(?:https?:\/\/)?(?:www\.)?facebook\.com\/(?:watch\?v=|video\.php\?v=|watch\/\?v=)[\w]+/i,
+  twitch: /(?:https?:\/\/)?(?:www\.)?twitch\.tv\/(?:videos\/|[\w]+\/clip\/|[\w]+\/clips\/)?[\w-]+/i,
   crunchyroll:
     /(?:https?:\/\/)?(?:www\.)?crunchyroll\.com\/(?:series|watch)\/[\w-]+/i,
   hianime: /(?:https?:\/\/)?(?:www\.)?hianime\.to\/(?:anime|watch)\/[\w-]+/i,
   reddit: /(?:https?:\/\/)?(?:www\.)?reddit\.com\/r\/\w+\/comments\/[\w]+/i,
-  pinterest: /(?:https?:\/\/)?(?:www\.)?pinterest\.com\/(?:pin|user)\/[\w]+/i,
+  pinterest: /(?:https?:\/\/)?(?:www\.)?pinterest\.com\/(?:pin|user)\/[\w-]+/i,
 };
 
 export function detectPlatform(url: string): string | null {
