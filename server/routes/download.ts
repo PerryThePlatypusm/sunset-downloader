@@ -37,12 +37,16 @@ const DEFAULT_QUALITY: Record<string, string> = {
 
 export const handleDownload: RequestHandler = async (req, res) => {
   try {
-    const { url, platform, quality, audioOnly, episodes } =
-      req.body as DownloadRequest;
+    const body = req.body as DownloadRequest;
+    const { url, platform, quality, audioOnly, episodes } = body;
 
     // Validate URL presence
     if (!url || typeof url !== "string" || !url.trim()) {
       return res.status(400).json({ error: "URL is required" });
+    }
+
+    if (url.length > 2048) {
+      return res.status(400).json({ error: "URL is too long" });
     }
 
     // Normalize and validate URL format
