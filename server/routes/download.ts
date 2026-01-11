@@ -112,29 +112,23 @@ export const handleDownload: RequestHandler = async (req, res) => {
         : "";
     const fileName = `media_${Date.now()}${episodeInfo}.${downloadType}`;
 
-    // Create a mock file response (in production, this would be actual media content)
-    // For now, we'll simulate a successful download by returning a small blob
+    // Create mock binary content for file download
     const mockContent = Buffer.from(
-      JSON.stringify({
-        platform: detectedPlatform,
-        quality: selectedQuality,
-        format: downloadType,
-        episodes: episodes && episodes.length > 0 ? episodes : undefined,
-        timestamp: new Date().toISOString(),
-        note: "This is a mock response. In production, actual media content would be served here.",
-      }),
+      audioOnly
+        ? "ID3\x04\x00\x00\x00\x00\x00\x00"
+        : "\x00\x00\x00\x20ftypisom"
     );
 
     res.setHeader("Content-Type", audioOnly ? "audio/mpeg" : "video/mp4");
     res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
     res.setHeader("Content-Length", mockContent.length);
 
-    res.send(mockContent);
+    return res.send(mockContent);
   } catch (error) {
     console.error("Download error:", error);
     const errorMessage =
       error instanceof Error ? error.message : "An unexpected error occurred";
-    res.status(500).json({ error: errorMessage });
+    return res.status(500).json({ error: errorMessage });
   }
 };
 

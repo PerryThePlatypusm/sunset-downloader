@@ -68,8 +68,14 @@ export default function Index() {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Download failed");
+        try {
+          const error = await response.json();
+          throw new Error(error.error || `Download failed with status ${response.status}`);
+        } catch (parseError) {
+          throw new Error(
+            `Download failed with status ${response.status}: ${response.statusText}`
+          );
+        }
       }
 
       setDownloadStatus("downloading");
