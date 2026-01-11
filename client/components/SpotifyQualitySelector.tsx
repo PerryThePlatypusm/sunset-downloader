@@ -14,6 +14,9 @@ export default function SpotifyQualitySelector({
   const createPixels = usePixelAnimation();
   const [animate, setAnimate] = useState(false);
 
+  // Ensure quality has a valid default
+  const effectiveQuality = quality || "standard";
+
   const handleQualityChange = (newQuality: string, event: React.MouseEvent) => {
     createPixels(event);
     setAnimate(true);
