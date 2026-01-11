@@ -116,7 +116,7 @@ export const handleDownload: RequestHandler = async (req, res) => {
     const mockContent = Buffer.from(
       audioOnly
         ? "ID3\x04\x00\x00\x00\x00\x00\x00"
-        : "\x00\x00\x00\x20ftypisom"
+        : "\x00\x00\x00\x20ftypisom",
     );
 
     res.setHeader("Content-Type", audioOnly ? "audio/mpeg" : "video/mp4");

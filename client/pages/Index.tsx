@@ -70,10 +70,12 @@ export default function Index() {
       if (!response.ok) {
         try {
           const error = await response.json();
-          throw new Error(error.error || `Download failed with status ${response.status}`);
+          throw new Error(
+            error.error || `Download failed with status ${response.status}`,
+          );
         } catch (parseError) {
           throw new Error(
-            `Download failed with status ${response.status}: ${response.statusText}`
+            `Download failed with status ${response.status}: ${response.statusText}`,
           );
         }
       }
