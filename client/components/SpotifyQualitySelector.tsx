@@ -28,13 +28,14 @@ export default function SpotifyQualitySelector({
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         {/* Quality Toggle */}
-        <div
-          className={`p-4 rounded-lg border-2 transition-all cursor-pointer group ${
-            quality === "standard"
+        <button
+          type="button"
+          onClick={(e) => handleQualityChange("standard", e)}
+          className={`p-4 rounded-lg border-2 transition-all cursor-pointer group text-left ${
+            effectiveQuality === "standard"
               ? "border-sunset-500 bg-sunset-500/20"
               : "border-sunset-700/50 bg-sunset-900/30 hover:border-sunset-600"
           }`}
-          onClick={(e) => handleQualityChange("standard", e)}
         >
           <div className="flex items-center gap-2 mb-2">
             <Music className="w-5 h-5 text-sunset-400 group-hover:text-sunset-300" />
@@ -42,15 +43,16 @@ export default function SpotifyQualitySelector({
           </div>
           <p className="text-xs text-sunset-400">320 kbps MP3</p>
           <p className="text-xs text-sunset-500 mt-1">High quality</p>
-        </div>
+        </button>
 
-        <div
-          className={`p-4 rounded-lg border-2 transition-all cursor-pointer group ${
-            quality === "lossless"
+        <button
+          type="button"
+          onClick={(e) => handleQualityChange("lossless", e)}
+          className={`p-4 rounded-lg border-2 transition-all cursor-pointer group text-left ${
+            effectiveQuality === "lossless"
               ? "border-pink-500 bg-pink-500/20"
               : "border-sunset-700/50 bg-sunset-900/30 hover:border-sunset-600"
           }`}
-          onClick={(e) => handleQualityChange("lossless", e)}
         >
           <div className="flex items-center gap-2 mb-2">
             <Zap className="w-5 h-5 text-pink-400 group-hover:text-pink-300" />
@@ -58,7 +60,7 @@ export default function SpotifyQualitySelector({
           </div>
           <p className="text-xs text-sunset-400">FLAC 44.1 kHz</p>
           <p className="text-xs text-pink-400 mt-1">Studio quality</p>
-        </div>
+        </button>
       </div>
 
       {/* Pixel Animation */}
@@ -79,7 +81,7 @@ export default function SpotifyQualitySelector({
       {/* Info Box */}
       <div className="p-3 rounded-lg bg-sunset-500/10 border border-sunset-500/30">
         <p className="text-sunset-300 text-sm">
-          {quality === "lossless"
+          {effectiveQuality === "lossless"
             ? "📊 Lossless downloads capture every detail with FLAC format. Perfect for audiophiles!"
             : "🎵 Standard 320 kbps MP3 provides excellent quality for most listening devices."}
         </p>
