@@ -430,7 +430,7 @@ export default function Index() {
               </Link>
               <span className="text-sunset-700">•</span>
               <a
-                href="https://guns.lol/clover"
+                href="https://guns.lol/clover."
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-sunset-400 hover:text-sunset-300 transition-colors"

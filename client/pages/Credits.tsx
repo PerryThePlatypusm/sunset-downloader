@@ -64,13 +64,13 @@ export default function Credits() {
                 </p>
               </div>
               <a
-                href="https://guns.lol/clover"
+                href="https://guns.lol/clover."
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 px-4 py-2 bg-sunset-500/20 hover:bg-sunset-500/30 border border-sunset-500/50 rounded-lg text-sunset-300 transition-colors"
               >
                 <ExternalLink className="w-4 h-4" />
-                guns.lol/clover
+                guns.lol/clover.
               </a>
             </div>
           </div>
