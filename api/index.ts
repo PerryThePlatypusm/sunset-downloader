@@ -1,4 +1,5 @@
 import "dotenv/config";
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import express from "express";
 import cors from "cors";
 import multer from "multer";
@@ -39,5 +40,7 @@ app.use("/api", (_req, res) => {
   res.status(404).json({ error: "API endpoint not found" });
 });
 
-// Export for Vercel serverless function
-export default app;
+// Vercel serverless function handler
+export default (req: VercelRequest, res: VercelResponse) => {
+  return app(req, res);
+};
