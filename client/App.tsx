@@ -8,6 +8,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useTypingTitle } from "@/hooks/use-typing-title";
 import { AudioProvider } from "@/context/AudioContext";
 import MuteButton from "@/components/MuteButton";
+import RainyBackground from "@/components/RainyBackground";
+import BackgroundAudio from "@/components/BackgroundAudio";
+import RainSoundEffect from "@/components/RainSoundEffect";
 import Index from "./pages/Index";
 import Credits from "./pages/Credits";
 import NotFound from "./pages/NotFound";
@@ -24,6 +27,9 @@ const AppContent = () => {
           <Toaster />
           <Sonner />
           <MuteButton />
+          <RainyBackground />
+          <BackgroundAudio />
+          <RainSoundEffect />
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
