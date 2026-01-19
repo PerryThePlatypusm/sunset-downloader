@@ -325,30 +325,48 @@ export default function Credits() {
             Community & Resources
           </h3>
           <div className="space-y-3">
-            <div className="flex items-center justify-between p-4 bg-sunset-900/30 hover:bg-sunset-900/50 rounded-lg border border-sunset-700/50 transition-colors group">
+            <a
+              href="https://www.npmjs.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between p-4 bg-sunset-900/30 hover:bg-sunset-900/50 rounded-lg border border-sunset-700/50 transition-colors group"
+            >
               <div>
                 <p className="text-sunset-300 font-semibold group-hover:text-sunset-100">
                   Open Source Community
                 </p>
                 <p className="text-sunset-500 text-xs">React, Node.js, and npm ecosystem</p>
               </div>
-            </div>
-            <div className="flex items-center justify-between p-4 bg-sunset-900/30 hover:bg-sunset-900/50 rounded-lg border border-sunset-700/50 transition-colors group">
+              <ExternalLink className="w-4 h-4 text-sunset-400" />
+            </a>
+            <a
+              href="https://code.visualstudio.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between p-4 bg-sunset-900/30 hover:bg-sunset-900/50 rounded-lg border border-sunset-700/50 transition-colors group"
+            >
               <div>
                 <p className="text-sunset-300 font-semibold group-hover:text-sunset-100">
                   Developer Tools
                 </p>
                 <p className="text-sunset-500 text-xs">Built with industry-standard tools</p>
               </div>
-            </div>
-            <div className="flex items-center justify-between p-4 bg-sunset-900/30 hover:bg-sunset-900/50 rounded-lg border border-sunset-700/50 transition-colors group">
+              <ExternalLink className="w-4 h-4 text-sunset-400" />
+            </a>
+            <a
+              href="https://developer.mozilla.org/en-US/docs/Web/API"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between p-4 bg-sunset-900/30 hover:bg-sunset-900/50 rounded-lg border border-sunset-700/50 transition-colors group"
+            >
               <div>
                 <p className="text-sunset-300 font-semibold group-hover:text-sunset-100">
                   Browser APIs
                 </p>
                 <p className="text-sunset-500 text-xs">Web Audio, Canvas, and modern standards</p>
               </div>
-            </div>
+              <ExternalLink className="w-4 h-4 text-sunset-400" />
+            </a>
           </div>
         </div>
 
