@@ -274,30 +274,48 @@ export default function Credits() {
             <p className="text-sunset-300 mb-4">
               Design inspiration and animation techniques adapted from various modern web applications. Special thanks to the following resources:
             </p>
-            <div className="flex items-center justify-between p-4 bg-sunset-900/30 hover:bg-sunset-900/50 rounded-lg border border-sunset-700/50 transition-colors group">
+            <a
+              href="https://developer.mozilla.org/en-US/docs/Web/CSS/gradient"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between p-4 bg-sunset-900/30 hover:bg-sunset-900/50 rounded-lg border border-sunset-700/50 transition-colors group"
+            >
               <div>
                 <p className="text-sunset-300 font-semibold group-hover:text-sunset-100">
                   Gradient Animations
                 </p>
                 <p className="text-sunset-500 text-xs">Smooth CSS & Canvas Rendering</p>
               </div>
-            </div>
-            <div className="flex items-center justify-between p-4 bg-sunset-900/30 hover:bg-sunset-900/50 rounded-lg border border-sunset-700/50 transition-colors group">
+              <ExternalLink className="w-4 h-4 text-sunset-400" />
+            </a>
+            <a
+              href="https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between p-4 bg-sunset-900/30 hover:bg-sunset-900/50 rounded-lg border border-sunset-700/50 transition-colors group"
+            >
               <div>
                 <p className="text-sunset-300 font-semibold group-hover:text-sunset-100">
                   Rain Effects
                 </p>
                 <p className="text-sunset-500 text-xs">Particle Animation System</p>
               </div>
-            </div>
-            <div className="flex items-center justify-between p-4 bg-sunset-900/30 hover:bg-sunset-900/50 rounded-lg border border-sunset-700/50 transition-colors group">
+              <ExternalLink className="w-4 h-4 text-sunset-400" />
+            </a>
+            <a
+              href="https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between p-4 bg-sunset-900/30 hover:bg-sunset-900/50 rounded-lg border border-sunset-700/50 transition-colors group"
+            >
               <div>
                 <p className="text-sunset-300 font-semibold group-hover:text-sunset-100">
                   Web Audio API
                 </p>
                 <p className="text-sunset-500 text-xs">Ambient Sound Effects</p>
               </div>
-            </div>
+              <ExternalLink className="w-4 h-4 text-sunset-400" />
+            </a>
           </div>
         </div>
 
