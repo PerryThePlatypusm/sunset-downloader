@@ -7,9 +7,6 @@ import QualitySelector from "@/components/QualitySelector";
 import SpotifyQualitySelector from "@/components/SpotifyQualitySelector";
 import EpisodeSelector from "@/components/EpisodeSelector";
 import DownloadProgress from "@/components/DownloadProgress";
-import RainyBackground from "@/components/RainyBackground";
-import BackgroundAudio from "@/components/BackgroundAudio";
-import RainSoundEffect from "@/components/RainSoundEffect";
 import { usePixelAnimation } from "@/hooks/use-pixel-animation";
 import { useConfetti } from "@/hooks/use-confetti";
 import { Download, Music, Video, Zap, Check, AlertCircle } from "lucide-react";
@@ -162,9 +159,6 @@ export default function Index() {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
-      <RainyBackground />
-      <BackgroundAudio />
-      <RainSoundEffect />
       <div className="relative z-10">
         {/* Header */}
       <header className="border-b border-sunset-700/50 backdrop-blur-md bg-sunset-900/50">
