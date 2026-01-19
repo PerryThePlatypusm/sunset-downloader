@@ -270,7 +270,7 @@ export default function Credits() {
             contributions.
           </p>
           <a
-            href="https://github.com/PerryThePlatypusm/sunset-20downloader"
+            href="https://github.com/PerryThePlatypusm/sunset-downloader"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-sunset-500 to-pink-500 hover:from-sunset-600 hover:to-pink-600 text-white rounded-lg font-semibold transition-all shadow-lg shadow-sunset-500/50"
