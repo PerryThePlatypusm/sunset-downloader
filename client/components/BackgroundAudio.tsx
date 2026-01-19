@@ -3,14 +3,14 @@ import { useAudio } from "@/context/AudioContext";
 
 export default function BackgroundAudio() {
   const audioRef = useRef<HTMLAudioElement>(null);
-  const hasAttemptedPlayRef = useRef(false);
+  const hasSetupInteractionRef = useRef(false);
   const { isMuted } = useAudio();
 
+  // Handle mute state
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    // Handle mute state
     if (isMuted) {
       audio.pause();
     } else {
@@ -18,14 +18,15 @@ export default function BackgroundAudio() {
       const playAudio = async () => {
         try {
           await audio.play();
-        } catch {
-          // Autoplay might be blocked, that's okay
+        } catch (error) {
+          console.log("Audio play failed (expected on first interaction):", error);
         }
       };
       playAudio();
     }
   }, [isMuted]);
 
+  // Initialize audio and set up interaction handler
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -34,41 +35,45 @@ export default function BackgroundAudio() {
     audio.volume = 0.3; // Set volume to 30%
     audio.loop = true;
 
-    // Attempt to play audio on first load
-    const playAudio = async () => {
-      if (hasAttemptedPlayRef.current || isMuted) return;
-      hasAttemptedPlayRef.current = true;
-
+    // Function to attempt playing audio
+    const attemptPlay = async () => {
+      if (isMuted) return;
       try {
         await audio.play();
-      } catch {
-        // Autoplay might be blocked by browser policy, that's expected
-        // Listen for user interaction to play
-        const handleInteraction = async () => {
-          try {
-            if (!isMuted) {
-              await audio.play();
-            }
-          } catch {
-            // Still blocked
-          }
-          document.removeEventListener("click", handleInteraction);
-          document.removeEventListener("touchstart", handleInteraction);
-        };
-
-        document.addEventListener("click", handleInteraction);
-        document.addEventListener("touchstart", handleInteraction);
-
-        return () => {
-          document.removeEventListener("click", handleInteraction);
-          document.removeEventListener("touchstart", handleInteraction);
-        };
+        console.log("✓ Audio started playing");
+      } catch (error) {
+        console.log("Audio autoplay blocked, waiting for user interaction");
       }
     };
 
-    playAudio();
+    // Try to play immediately (might be blocked)
+    attemptPlay();
+
+    // Set up user interaction handler for browsers that block autoplay
+    const handleInteraction = async () => {
+      if (hasSetupInteractionRef.current) return;
+      hasSetupInteractionRef.current = true;
+
+      try {
+        if (!isMuted) {
+          await audio.play();
+          console.log("✓ Audio started after user interaction");
+        }
+      } catch (error) {
+        console.error("Failed to play audio after interaction:", error);
+      }
+
+      // Remove listeners after first interaction
+      document.removeEventListener("click", handleInteraction);
+      document.removeEventListener("touchstart", handleInteraction);
+    };
+
+    document.addEventListener("click", handleInteraction);
+    document.addEventListener("touchstart", handleInteraction);
 
     return () => {
+      document.removeEventListener("click", handleInteraction);
+      document.removeEventListener("touchstart", handleInteraction);
       if (audio) {
         audio.pause();
       }
