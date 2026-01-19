@@ -265,6 +265,42 @@ export default function Credits() {
           </div>
         </div>
 
+        {/* Design & Animation Inspiration Section */}
+        <div className="bg-gradient-to-br from-sunset-800/50 to-sunset-800/30 backdrop-blur-xl border border-sunset-700/50 rounded-2xl p-8 shadow-2xl shadow-sunset-900/50 mb-8">
+          <h3 className="text-2xl font-bold text-white mb-6">
+            Design & Animation
+          </h3>
+          <div className="space-y-3">
+            <p className="text-sunset-300 mb-4">
+              Design inspiration and animation techniques adapted from various modern web applications. Special thanks to the following resources:
+            </p>
+            <div className="flex items-center justify-between p-4 bg-sunset-900/30 hover:bg-sunset-900/50 rounded-lg border border-sunset-700/50 transition-colors group">
+              <div>
+                <p className="text-sunset-300 font-semibold group-hover:text-sunset-100">
+                  Gradient Animations
+                </p>
+                <p className="text-sunset-500 text-xs">Smooth CSS & Canvas Rendering</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between p-4 bg-sunset-900/30 hover:bg-sunset-900/50 rounded-lg border border-sunset-700/50 transition-colors group">
+              <div>
+                <p className="text-sunset-300 font-semibold group-hover:text-sunset-100">
+                  Rain Effects
+                </p>
+                <p className="text-sunset-500 text-xs">Particle Animation System</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between p-4 bg-sunset-900/30 hover:bg-sunset-900/50 rounded-lg border border-sunset-700/50 transition-colors group">
+              <div>
+                <p className="text-sunset-300 font-semibold group-hover:text-sunset-100">
+                  Web Audio API
+                </p>
+                <p className="text-sunset-500 text-xs">Ambient Sound Effects</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Open Source Section */}
         <div className="bg-gradient-to-br from-sunset-800/50 to-sunset-800/30 backdrop-blur-xl border border-sunset-700/50 rounded-2xl p-8 shadow-2xl shadow-sunset-900/50">
           <h3 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
