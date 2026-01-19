@@ -301,6 +301,39 @@ export default function Credits() {
           </div>
         </div>
 
+        {/* Community & Resources Section */}
+        <div className="bg-gradient-to-br from-sunset-800/50 to-sunset-800/30 backdrop-blur-xl border border-sunset-700/50 rounded-2xl p-8 shadow-2xl shadow-sunset-900/50 mb-8">
+          <h3 className="text-2xl font-bold text-white mb-6">
+            Community & Resources
+          </h3>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-4 bg-sunset-900/30 hover:bg-sunset-900/50 rounded-lg border border-sunset-700/50 transition-colors group">
+              <div>
+                <p className="text-sunset-300 font-semibold group-hover:text-sunset-100">
+                  Open Source Community
+                </p>
+                <p className="text-sunset-500 text-xs">React, Node.js, and npm ecosystem</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between p-4 bg-sunset-900/30 hover:bg-sunset-900/50 rounded-lg border border-sunset-700/50 transition-colors group">
+              <div>
+                <p className="text-sunset-300 font-semibold group-hover:text-sunset-100">
+                  Developer Tools
+                </p>
+                <p className="text-sunset-500 text-xs">Built with industry-standard tools</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between p-4 bg-sunset-900/30 hover:bg-sunset-900/50 rounded-lg border border-sunset-700/50 transition-colors group">
+              <div>
+                <p className="text-sunset-300 font-semibold group-hover:text-sunset-100">
+                  Browser APIs
+                </p>
+                <p className="text-sunset-500 text-xs">Web Audio, Canvas, and modern standards</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Open Source Section */}
         <div className="bg-gradient-to-br from-sunset-800/50 to-sunset-800/30 backdrop-blur-xl border border-sunset-700/50 rounded-2xl p-8 shadow-2xl shadow-sunset-900/50">
           <h3 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
@@ -310,7 +343,7 @@ export default function Credits() {
           <p className="text-sunset-300 mb-6">
             SunsetDownloader is built on the foundations of amazing open-source
             projects. We're grateful to the entire community for their
-            contributions.
+            contributions and for making this project possible.
           </p>
           <a
             href="https://github.com/PerryThePlatypusm/sunset-downloader"
