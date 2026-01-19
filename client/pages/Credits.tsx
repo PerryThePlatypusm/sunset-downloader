@@ -1,18 +1,11 @@
 import { ArrowLeft, Github, ExternalLink } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import RainyBackground from "@/components/RainyBackground";
-import BackgroundAudio from "@/components/BackgroundAudio";
-import RainSoundEffect from "@/components/RainSoundEffect";
 
 export default function Credits() {
   const navigate = useNavigate();
 
   return (
     <div className="relative min-h-screen overflow-hidden">
-      <RainyBackground />
-      <BackgroundAudio />
-      <RainSoundEffect />
       <div className="relative z-10">
       {/* Header */}
       <header className="border-b border-sunset-700/50 backdrop-blur-md bg-sunset-900/50">
