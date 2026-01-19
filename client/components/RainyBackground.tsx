@@ -74,9 +74,9 @@ export default function RainyBackground() {
       ref={containerRef}
       className="fixed inset-0 pointer-events-none overflow-hidden gradient-animated"
       style={{
-        background: `linear-gradient(135deg, #4a148c 0%, #6a1b9a 25%, #7b1fa2 50%, #6a1b9a 75%, #4a148c 100%)`,
-        backgroundSize: "200% 200%",
-        animation: "gradientShift 20s ease infinite",
+        background: `linear-gradient(45deg, #2d0a4e 0%, #5a189a 20%, #8b2e83 40%, #c77dff 50%, #8b2e83 60%, #5a189a 80%, #2d0a4e 100%)`,
+        backgroundSize: "300% 300%",
+        animation: "gradientShift 12s ease-in-out infinite",
         zIndex: 0,
       }}
     />
