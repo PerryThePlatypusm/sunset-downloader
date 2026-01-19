@@ -78,7 +78,7 @@ export default function BackgroundAudio() {
   return (
     <audio
       ref={audioRef}
-      src="https://cdn.builder.io/o/assets%2F4b378ef2d6a74fe5a3255c22037cbe5f%2Fbfebcc4a3b73470693a7528dd8044dcb?alt=media&token=81d4632b-49ee-4ea5-9383-b3953971b31f&apiKey=4b378ef2d6a74fe5a3255c22037cbe5f"
+      src="https://cdn.builder.io/o/assets%2F4b378ef2d6a74fe5a3255c22037cbe5f%2F93eb007787e546abaac3f37dbd052b98?alt=media&token=b6282761-4629-437d-8525-33e931d99bcf&apiKey=4b378ef2d6a74fe5a3255c22037cbe5f"
       preload="auto"
       playsInline
     />
