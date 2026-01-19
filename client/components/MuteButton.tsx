@@ -1,6 +1,7 @@
 import { useAudio } from "@/context/AudioContext";
 import { Volume2, VolumeX } from "lucide-react";
 
+// Global mute button that controls all audio across the application
 export default function MuteButton() {
   const { isMuted, toggleMute } = useAudio();
 
