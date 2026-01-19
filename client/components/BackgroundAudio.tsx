@@ -1,8 +1,30 @@
 import { useEffect, useRef } from "react";
+import { useAudio } from "@/context/AudioContext";
 
 export default function BackgroundAudio() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const hasAttemptedPlayRef = useRef(false);
+  const { isMuted } = useAudio();
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    // Handle mute state
+    if (isMuted) {
+      audio.pause();
+    } else {
+      // Try to play if not muted
+      const playAudio = async () => {
+        try {
+          await audio.play();
+        } catch {
+          // Autoplay might be blocked, that's okay
+        }
+      };
+      playAudio();
+    }
+  }, [isMuted]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -12,9 +34,9 @@ export default function BackgroundAudio() {
     audio.volume = 0.3; // Set volume to 30%
     audio.loop = true;
 
-    // Attempt to play audio
+    // Attempt to play audio on first load
     const playAudio = async () => {
-      if (hasAttemptedPlayRef.current) return;
+      if (hasAttemptedPlayRef.current || isMuted) return;
       hasAttemptedPlayRef.current = true;
 
       try {
@@ -24,7 +46,9 @@ export default function BackgroundAudio() {
         // Listen for user interaction to play
         const handleInteraction = async () => {
           try {
-            await audio.play();
+            if (!isMuted) {
+              await audio.play();
+            }
           } catch {
             // Still blocked
           }
@@ -34,6 +58,11 @@ export default function BackgroundAudio() {
 
         document.addEventListener("click", handleInteraction);
         document.addEventListener("touchstart", handleInteraction);
+
+        return () => {
+          document.removeEventListener("click", handleInteraction);
+          document.removeEventListener("touchstart", handleInteraction);
+        };
       }
     };
 
@@ -44,7 +73,7 @@ export default function BackgroundAudio() {
         audio.pause();
       }
     };
-  }, []);
+  }, [isMuted]);
 
   return (
     <audio
