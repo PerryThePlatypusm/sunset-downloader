@@ -161,8 +161,12 @@ export default function Index() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-sunset-900 via-sunset-800 to-sunset-900">
-      {/* Header */}
+    <div className="relative min-h-screen overflow-hidden">
+      <RainyBackground />
+      <BackgroundAudio />
+      <RainSoundEffect />
+      <div className="relative z-10">
+        {/* Header */}
       <header className="border-b border-sunset-700/50 backdrop-blur-md bg-sunset-900/50">
         <div className="max-w-6xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
@@ -448,6 +452,7 @@ export default function Index() {
           </p>
         </div>
       </footer>
+      </div>
     </div>
   );
 }
