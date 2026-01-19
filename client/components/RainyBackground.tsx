@@ -72,7 +72,7 @@ export default function RainyBackground() {
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 pointer-events-none overflow-hidden gradient-animated"
+      className="fixed inset-0 pointer-events-none overflow-hidden"
       style={{
         backgroundImage: `linear-gradient(90deg,
           #2d0a4e 0%,
