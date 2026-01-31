@@ -464,8 +464,14 @@ export default function Index() {
                   <p>🎵 Audio: MP3, FLAC, AAC, ALAC</p>
                   <p>🎵 Audio: OGG, WAV, Opus</p>
                   <p>🎬 Video: MP4 (All Resolutions)</p>
-                  <p className="text-sunset-300 mt-2">✓ VLC Media Player</p>
-                  <p className="text-sunset-300">✓ Windows Media Player</p>
+                  <p className="text-sunset-300 mt-3 font-semibold">
+                    Desktop
+                  </p>
+                  <p className="text-sunset-300">✓ VLC • Windows Media</p>
+                  <p className="text-sunset-300 mt-3 font-semibold">
+                    Mobile
+                  </p>
+                  <p className="text-sunset-300">✓ iOS • Android</p>
                 </div>
               </div>
 
