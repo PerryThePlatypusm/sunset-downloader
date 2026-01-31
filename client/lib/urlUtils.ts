@@ -67,6 +67,9 @@ export const QUALITY_LABELS: Record<string, string> = {
   "320": "320 kbps MP3",
   lossless: "Lossless FLAC",
   aac: "AAC (M4A)",
+  alac: "ALAC (M4A)",
+  ogg: "OGG Vorbis",
+  wav: "WAV",
   opus: "Opus 128",
   opus192: "Opus 192",
 };
@@ -78,8 +81,12 @@ export const QUALITY_FORMATS: Record<string, string> = {
   "320": "mp3",
   lossless: "flac",
   aac: "m4a",
+  alac: "m4a",
+  ogg: "ogg",
+  wav: "wav",
   opus: "opus",
   opus192: "opus",
 };
 
-export const WINDOWS_COMPATIBLE_FORMATS = ["mp3", "m4a", "flac", "wav"];
+export const WINDOWS_COMPATIBLE_FORMATS = ["mp3", "m4a", "flac", "wav", "ogg"];
+export const VLC_COMPATIBLE_FORMATS = ["mp3", "m4a", "flac", "wav", "ogg", "opus"];
