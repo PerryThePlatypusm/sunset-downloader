@@ -174,12 +174,17 @@ export default function SpotifyQualitySelector({
             </p>
             <p className="text-sunset-400 text-xs">
               ✓ VLC Media Player
-              {selectedQuality.format === "MP3" && " • Windows Media Player • Universal support"}
-              {selectedQuality.format === "M4A" && " • Windows Media Player • All devices"}
-              {selectedQuality.format === "FLAC" && " • Windows Media Player • Premium quality"}
-              {selectedQuality.format === "WAV" && " • Windows Media Player • Maximum compatibility"}
+              {selectedQuality.format === "MP3" &&
+                " • Windows Media Player • Universal support"}
+              {selectedQuality.format === "M4A" &&
+                " • Windows Media Player • All devices"}
+              {selectedQuality.format === "FLAC" &&
+                " • Windows Media Player • Premium quality"}
+              {selectedQuality.format === "WAV" &&
+                " • Windows Media Player • Maximum compatibility"}
               {selectedQuality.format === "OGG" && " • Optimized format"}
-              {selectedQuality.format === "ALAC" && " • Windows Media Player • Lossless"}
+              {selectedQuality.format === "ALAC" &&
+                " • Windows Media Player • Lossless"}
             </p>
           </>
         )}

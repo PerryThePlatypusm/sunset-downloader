@@ -89,4 +89,11 @@ export const QUALITY_FORMATS: Record<string, string> = {
 };
 
 export const WINDOWS_COMPATIBLE_FORMATS = ["mp3", "m4a", "flac", "wav", "ogg"];
-export const VLC_COMPATIBLE_FORMATS = ["mp3", "m4a", "flac", "wav", "ogg", "opus"];
+export const VLC_COMPATIBLE_FORMATS = [
+  "mp3",
+  "m4a",
+  "flac",
+  "wav",
+  "ogg",
+  "opus",
+];

@@ -430,7 +430,9 @@ export default function Index() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               {/* Links Column */}
               <div>
-                <h4 className="text-sunset-200 font-semibold mb-3">Navigation</h4>
+                <h4 className="text-sunset-200 font-semibold mb-3">
+                  Navigation
+                </h4>
                 <div className="flex flex-col gap-2 text-sm">
                   <Link
                     to="/"
@@ -455,7 +457,9 @@ export default function Index() {
 
               {/* Formats Column */}
               <div>
-                <h4 className="text-sunset-200 font-semibold mb-3">Supported Formats</h4>
+                <h4 className="text-sunset-200 font-semibold mb-3">
+                  Supported Formats
+                </h4>
                 <div className="text-xs text-sunset-400 space-y-1">
                   <p>🎵 Audio: MP3, FLAC, AAC, ALAC</p>
                   <p>🎵 Audio: OGG, WAV, Opus</p>
@@ -490,7 +494,8 @@ export default function Index() {
             <div className="border-t border-sunset-700/30 pt-6">
               <p className="text-sunset-400 text-sm text-center">
                 © 2026 SunsetDownloader. Download responsibly and respect
-                copyright laws. All formats fully compatible with VLC and Windows Media Player.
+                copyright laws. All formats fully compatible with VLC and
+                Windows Media Player.
               </p>
             </div>
           </div>

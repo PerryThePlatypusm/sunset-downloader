@@ -202,7 +202,10 @@ const handler: Handler = async (event) => {
           break;
         case "alac":
           // ALAC/M4A header
-          const alacHeader = Buffer.from([0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d]);
+          const alacHeader = Buffer.from([
+            0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f,
+            0x6d,
+          ]);
           const alacData = Buffer.alloc(10240, 0x00);
           mockContent = Buffer.concat([alacHeader, alacData]);
           mimeType = "audio/mp4";
@@ -217,19 +220,50 @@ const handler: Handler = async (event) => {
         case "wav":
           // WAV/RIFF header
           const wavHeader = Buffer.from([
-            0x52, 0x49, 0x46, 0x46, // "RIFF"
-            0x00, 0x28, 0x00, 0x00, // chunk size
-            0x57, 0x41, 0x56, 0x45, // "WAVE"
-            0x66, 0x6d, 0x74, 0x20, // "fmt "
-            0x10, 0x00, 0x00, 0x00, // subchunk size
-            0x01, 0x00, // audio format (PCM)
-            0x02, 0x00, // channels
-            0x44, 0xac, 0x00, 0x00, // sample rate (44100 Hz)
-            0x10, 0xb1, 0x02, 0x00, // byte rate
-            0x04, 0x00, // block align
-            0x10, 0x00, // bits per sample
-            0x64, 0x61, 0x74, 0x61, // "data"
-            0x00, 0x28, 0x00, 0x00, // data size
+            0x52,
+            0x49,
+            0x46,
+            0x46, // "RIFF"
+            0x00,
+            0x28,
+            0x00,
+            0x00, // chunk size
+            0x57,
+            0x41,
+            0x56,
+            0x45, // "WAVE"
+            0x66,
+            0x6d,
+            0x74,
+            0x20, // "fmt "
+            0x10,
+            0x00,
+            0x00,
+            0x00, // subchunk size
+            0x01,
+            0x00, // audio format (PCM)
+            0x02,
+            0x00, // channels
+            0x44,
+            0xac,
+            0x00,
+            0x00, // sample rate (44100 Hz)
+            0x10,
+            0xb1,
+            0x02,
+            0x00, // byte rate
+            0x04,
+            0x00, // block align
+            0x10,
+            0x00, // bits per sample
+            0x64,
+            0x61,
+            0x74,
+            0x61, // "data"
+            0x00,
+            0x28,
+            0x00,
+            0x00, // data size
           ]);
           const wavData = Buffer.alloc(10240, 0x00);
           mockContent = Buffer.concat([wavHeader, wavData]);
