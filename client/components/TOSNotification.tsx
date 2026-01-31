@@ -39,7 +39,8 @@ export default function TOSNotification() {
               Important: Check Terms of Service
             </p>
             <p className="text-sm text-orange-50 mb-3">
-              Please review our Terms of Service before downloading to understand your legal responsibilities.
+              Please review our Terms of Service before downloading to
+              understand your legal responsibilities.
             </p>
             <Link
               to="/terms-of-service"

@@ -98,11 +98,13 @@ export default function SpotifyQualitySelector({
               }`}
             >
               <div className="flex items-center gap-2 mb-1">
-                <Icon className={`w-4 h-4 ${
-                  q.id === "lossless"
-                    ? "text-pink-400 group-hover:text-pink-300"
-                    : "text-sunset-400 group-hover:text-sunset-300"
-                }`} />
+                <Icon
+                  className={`w-4 h-4 ${
+                    q.id === "lossless"
+                      ? "text-pink-400 group-hover:text-pink-300"
+                      : "text-sunset-400 group-hover:text-sunset-300"
+                  }`}
+                />
                 <span className="font-semibold text-sunset-200 text-sm">
                   {q.label}
                 </span>
