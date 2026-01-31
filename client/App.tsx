@@ -12,6 +12,7 @@ import BackgroundAudio from "@/components/BackgroundAudio";
 import RainSoundEffect from "@/components/RainSoundEffect";
 import Index from "./pages/Index";
 import Credits from "./pages/Credits";
+import TermsOfService from "./pages/TermsOfService";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
