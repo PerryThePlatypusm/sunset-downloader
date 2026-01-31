@@ -61,6 +61,11 @@ export default function QualitySelector({
           <div className="text-xs text-sunset-400 group-hover:text-sunset-300">
             {q.description}
           </div>
+          {(q as any).compat && (
+            <div className="text-xs text-sunset-300 font-medium mt-1">
+              ✓ {(q as any).compat}
+            </div>
+          )}
         </button>
       ))}
     </div>
