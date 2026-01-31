@@ -42,6 +42,9 @@ const QUALITY_FORMATS: Record<string, string> = {
   "320": "mp3",
   lossless: "flac",
   aac: "m4a",
+  alac: "m4a",
+  ogg: "ogg",
+  wav: "wav",
   opus: "opus",
   opus192: "opus",
 };
@@ -50,6 +53,8 @@ const MIME_TYPES: Record<string, string> = {
   mp3: "audio/mpeg",
   m4a: "audio/mp4",
   flac: "audio/flac",
+  wav: "audio/wav",
+  ogg: "audio/ogg",
   opus: "audio/opus",
   mp4: "video/mp4",
 };
