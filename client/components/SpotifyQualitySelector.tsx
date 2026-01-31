@@ -49,12 +49,36 @@ const spotifyQualities = [
     info: "Alternative format, smaller file",
   },
   {
+    id: "ogg",
+    label: "OGG",
+    format: "OGG",
+    description: "VLC Optimized",
+    icon: Music,
+    info: "Perfect for VLC, open-source format",
+  },
+  {
+    id: "wav",
+    label: "WAV",
+    format: "WAV",
+    description: "Uncompressed",
+    icon: Zap,
+    info: "Maximum compatibility with all players",
+  },
+  {
     id: "lossless",
-    label: "Lossless",
+    label: "FLAC",
     format: "FLAC",
     description: "Studio",
     icon: Zap,
-    info: "Audiophile-grade quality",
+    info: "Lossless compression, audiophile-grade",
+  },
+  {
+    id: "alac",
+    label: "ALAC",
+    format: "M4A",
+    description: "Apple Lossless",
+    icon: Music,
+    info: "Lossless format with excellent compatibility",
   },
 ];
 
