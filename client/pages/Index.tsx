@@ -427,36 +427,72 @@ export default function Index() {
         {/* Footer */}
         <footer className="border-t border-sunset-700/50 backdrop-blur-md bg-sunset-900/50 mt-16">
           <div className="max-w-6xl mx-auto px-4 py-8">
-            <div className="flex flex-col items-center gap-4 mb-4">
-              <div className="flex gap-4 text-sm">
-                <Link
-                  to="/credits"
-                  className="text-sunset-400 hover:text-sunset-300 transition-colors"
-                >
-                  Credits
-                </Link>
-                <span className="text-sunset-700">•</span>
-                <Link
-                  to="/terms-of-service"
-                  className="text-sunset-400 hover:text-sunset-300 transition-colors"
-                >
-                  Terms of Service
-                </Link>
-                <span className="text-sunset-700">•</span>
-                <a
-                  href="https://guns.lol/clover."
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sunset-400 hover:text-sunset-300 transition-colors"
-                >
-                  Follow
-                </a>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              {/* Links Column */}
+              <div>
+                <h4 className="text-sunset-200 font-semibold mb-3">Navigation</h4>
+                <div className="flex flex-col gap-2 text-sm">
+                  <Link
+                    to="/"
+                    className="text-sunset-400 hover:text-sunset-300 transition-colors"
+                  >
+                    Home
+                  </Link>
+                  <Link
+                    to="/credits"
+                    className="text-sunset-400 hover:text-sunset-300 transition-colors"
+                  >
+                    Credits
+                  </Link>
+                  <Link
+                    to="/terms-of-service"
+                    className="text-sunset-400 hover:text-sunset-300 transition-colors"
+                  >
+                    Terms of Service
+                  </Link>
+                </div>
+              </div>
+
+              {/* Formats Column */}
+              <div>
+                <h4 className="text-sunset-200 font-semibold mb-3">Supported Formats</h4>
+                <div className="text-xs text-sunset-400 space-y-1">
+                  <p>🎵 Audio: MP3, FLAC, AAC, ALAC</p>
+                  <p>🎵 Audio: OGG, WAV, Opus</p>
+                  <p>🎬 Video: MP4 (All Resolutions)</p>
+                  <p className="text-sunset-300 mt-2">✓ VLC Media Player</p>
+                  <p className="text-sunset-300">✓ Windows Media Player</p>
+                </div>
+              </div>
+
+              {/* Social Column */}
+              <div>
+                <h4 className="text-sunset-200 font-semibold mb-3">Follow</h4>
+                <div className="flex flex-col gap-2 text-sm">
+                  <a
+                    href="https://guns.lol/clover."
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sunset-400 hover:text-sunset-300 transition-colors"
+                  >
+                    Creator
+                  </a>
+                  <a
+                    href="#"
+                    className="text-sunset-500 text-xs opacity-50 cursor-default"
+                  >
+                    More Coming Soon...
+                  </a>
+                </div>
               </div>
             </div>
-            <p className="text-sunset-400 text-sm text-center">
-              © 2026 SunsetDownloader. Download responsibly and respect
-              copyright laws.
-            </p>
+
+            <div className="border-t border-sunset-700/30 pt-6">
+              <p className="text-sunset-400 text-sm text-center">
+                © 2026 SunsetDownloader. Download responsibly and respect
+                copyright laws. All formats fully compatible with VLC and Windows Media Player.
+              </p>
+            </div>
           </div>
         </footer>
       </div>
