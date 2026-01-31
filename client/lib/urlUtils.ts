@@ -61,12 +61,25 @@ export const QUALITY_LABELS: Record<string, string> = {
   "1440": "1440p",
   "2160": "2160p",
   "4320": "4320p",
-  "128": "128 kbps",
-  "192": "192 kbps",
-  "256": "256 kbps",
-  "320": "320 kbps",
+  "128": "128 kbps MP3",
+  "192": "192 kbps MP3",
+  "256": "256 kbps MP3",
+  "320": "320 kbps MP3",
   lossless: "Lossless FLAC",
-  aac: "AAC Premium",
+  aac: "AAC (M4A)",
   opus: "Opus 128",
   opus192: "Opus 192",
 };
+
+export const QUALITY_FORMATS: Record<string, string> = {
+  "128": "mp3",
+  "192": "mp3",
+  "256": "mp3",
+  "320": "mp3",
+  lossless: "flac",
+  aac: "m4a",
+  opus: "opus",
+  opus192: "opus",
+};
+
+export const WINDOWS_COMPATIBLE_FORMATS = ["mp3", "m4a", "flac", "wav"];
