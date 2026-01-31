@@ -105,7 +105,7 @@ export default function SpotifyQualitySelector({
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
         {spotifyQualities.map((q) => {
           const Icon = q.icon;
           return (
