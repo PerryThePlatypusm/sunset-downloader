@@ -10,6 +10,7 @@ import DownloadProgress from "@/components/DownloadProgress";
 import { usePixelAnimation } from "@/hooks/use-pixel-animation";
 import { useConfetti } from "@/hooks/use-confetti";
 import { Download, Music, Video, Zap, Check, AlertCircle } from "lucide-react";
+import { QUALITY_FORMATS } from "@/lib/urlUtils";
 
 export default function Index() {
   const createPixels = usePixelAnimation();
