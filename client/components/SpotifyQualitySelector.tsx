@@ -15,6 +15,7 @@ const spotifyQualities = [
     description: "Low",
     icon: Smartphone,
     info: "Compact, mobile-friendly",
+    mobile: "iOS • Android",
   },
   {
     id: "192",
@@ -23,6 +24,7 @@ const spotifyQualities = [
     description: "Medium",
     icon: Music,
     info: "Standard quality",
+    mobile: "iOS • Android",
   },
   {
     id: "256",
@@ -31,6 +33,7 @@ const spotifyQualities = [
     description: "High",
     icon: Music,
     info: "Good for most uses",
+    mobile: "iOS • Android",
   },
   {
     id: "320",
@@ -39,6 +42,7 @@ const spotifyQualities = [
     description: "Very High",
     icon: Music,
     info: "Excellent for everyday listening",
+    mobile: "iOS • Android",
   },
   {
     id: "aac",
@@ -47,6 +51,7 @@ const spotifyQualities = [
     description: "Premium",
     icon: Music,
     info: "Alternative format, smaller file",
+    mobile: "iOS • Android",
   },
   {
     id: "ogg",
@@ -55,6 +60,7 @@ const spotifyQualities = [
     description: "VLC Optimized",
     icon: Music,
     info: "Perfect for VLC, open-source format",
+    mobile: "iOS • Android",
   },
   {
     id: "wav",
@@ -63,6 +69,7 @@ const spotifyQualities = [
     description: "Uncompressed",
     icon: Zap,
     info: "Maximum compatibility with all players",
+    mobile: "iOS • Android",
   },
   {
     id: "lossless",
@@ -71,6 +78,7 @@ const spotifyQualities = [
     description: "Studio",
     icon: Zap,
     info: "Lossless compression, audiophile-grade",
+    mobile: "Android",
   },
   {
     id: "alac",
@@ -79,6 +87,7 @@ const spotifyQualities = [
     description: "Apple Lossless",
     icon: Music,
     info: "Lossless format with excellent compatibility",
+    mobile: "iOS",
   },
 ];
 
