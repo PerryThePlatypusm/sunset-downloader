@@ -7,7 +7,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useTypingTitle } from "@/hooks/use-typing-title";
 import { AudioProvider } from "@/context/AudioContext";
-import MuteButton from "@/components/MuteButton";
 import RainyBackground from "@/components/RainyBackground";
 import BackgroundAudio from "@/components/BackgroundAudio";
 import RainSoundEffect from "@/components/RainSoundEffect";
