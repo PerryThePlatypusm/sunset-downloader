@@ -166,6 +166,7 @@ export default function Index() {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
+      <TOSNotification />
       <div className="relative z-10">
         {/* Header */}
       <header className="border-b border-sunset-700/50 backdrop-blur-md bg-sunset-900/50">
