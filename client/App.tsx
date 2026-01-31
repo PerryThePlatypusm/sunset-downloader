@@ -25,7 +25,6 @@ const AppContent = () => {
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <MuteButton />
           <RainyBackground />
           <BackgroundAudio />
           <RainSoundEffect />
