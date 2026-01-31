@@ -19,14 +19,17 @@ const videoQualities = [
 ];
 
 const audioQualities = [
-  { id: "128", label: "128 kbps", description: "Low" },
-  { id: "192", label: "192 kbps", description: "Medium" },
-  { id: "256", label: "256 kbps", description: "High" },
-  { id: "320", label: "320 kbps", description: "Very High" },
-  { id: "lossless", label: "Lossless FLAC", description: "Highest" },
-  { id: "aac", label: "AAC (Premium)", description: "Optimized" },
-  { id: "opus", label: "Opus 128", description: "Efficient" },
-  { id: "opus192", label: "Opus 192", description: "Balanced" },
+  { id: "128", label: "128 kbps MP3", description: "Low", compat: "WMP • VLC" },
+  { id: "192", label: "192 kbps MP3", description: "Medium", compat: "WMP • VLC" },
+  { id: "256", label: "256 kbps MP3", description: "High", compat: "WMP • VLC" },
+  { id: "320", label: "320 kbps MP3", description: "Very High", compat: "WMP • VLC" },
+  { id: "lossless", label: "FLAC", description: "Highest", compat: "WMP • VLC" },
+  { id: "aac", label: "AAC (M4A)", description: "Optimized", compat: "WMP • VLC" },
+  { id: "alac", label: "ALAC (M4A)", description: "Lossless", compat: "WMP • VLC" },
+  { id: "ogg", label: "OGG Vorbis", description: "Open", compat: "VLC" },
+  { id: "wav", label: "WAV", description: "Uncompressed", compat: "WMP • VLC" },
+  { id: "opus", label: "Opus 128", description: "Efficient", compat: "VLC" },
+  { id: "opus192", label: "Opus 192", description: "Balanced", compat: "VLC" },
 ];
 
 export default function QualitySelector({
