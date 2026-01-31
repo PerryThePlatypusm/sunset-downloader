@@ -135,23 +135,53 @@ export const handleDownload: RequestHandler = async (req, res) => {
     }
 
     // Generate downloadable mock content
-    const downloadType = audioOnly ? "mp3" : "mp4";
+    const fileExtension = audioOnly
+      ? QUALITY_FORMATS[selectedQuality] || "mp3"
+      : "mp4";
     const episodeInfo =
       episodes && episodes.length > 0
         ? `_eps_${episodes.slice(0, 5).join("-")}`
         : "";
-    const fileName = `media_${Date.now()}${episodeInfo}.${downloadType}`;
+    const fileName = `media_${Date.now()}${episodeInfo}.${fileExtension}`;
 
     // Create proper mock file content (larger so it's noticeable)
     let mockContent: Buffer;
+    let mimeType: string;
 
     if (audioOnly) {
-      // MP3 header + some mock data (about 10KB)
-      const mp3Header = Buffer.from([
-        0xff, 0xfb, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00,
-      ]);
-      const mockData = Buffer.alloc(10240, 0x00);
-      mockContent = Buffer.concat([mp3Header, mockData]);
+      // Use appropriate header based on selected quality
+      switch (selectedQuality) {
+        case "lossless":
+          // FLAC header
+          const flacHeader = Buffer.from([0x66, 0x4c, 0x61, 0x43]); // "fLaC"
+          const flacData = Buffer.alloc(10240, 0x00);
+          mockContent = Buffer.concat([flacHeader, flacData]);
+          mimeType = "audio/flac";
+          break;
+        case "aac":
+          // AAC/M4A header (simple ADTS header)
+          const aacHeader = Buffer.from([0xff, 0xf1, 0x50, 0x80]);
+          const aacData = Buffer.alloc(10240, 0x00);
+          mockContent = Buffer.concat([aacHeader, aacData]);
+          mimeType = "audio/mp4";
+          break;
+        case "opus":
+        case "opus192":
+          // Opus header
+          const opusHeader = Buffer.from("OpusHead");
+          const opusData = Buffer.alloc(10240, 0x00);
+          mockContent = Buffer.concat([opusHeader, opusData]);
+          mimeType = "audio/opus";
+          break;
+        default:
+          // MP3 header for all MP3 bitrates
+          const mp3Header = Buffer.from([
+            0xff, 0xfb, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00,
+          ]);
+          const mp3Data = Buffer.alloc(10240, 0x00);
+          mockContent = Buffer.concat([mp3Header, mp3Data]);
+          mimeType = "audio/mpeg";
+      }
     } else {
       // MP4 header + mock data (about 50KB)
       const mp4Header = Buffer.from([
@@ -160,9 +190,10 @@ export const handleDownload: RequestHandler = async (req, res) => {
       ]);
       const mockData = Buffer.alloc(51200, 0x00);
       mockContent = Buffer.concat([mp4Header, mockData]);
+      mimeType = "video/mp4";
     }
 
-    res.setHeader("Content-Type", audioOnly ? "audio/mpeg" : "video/mp4");
+    res.setHeader("Content-Type", mimeType);
     res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
     res.setHeader("Content-Length", mockContent.length.toString());
     res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
