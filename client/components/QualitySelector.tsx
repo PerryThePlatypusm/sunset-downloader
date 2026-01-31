@@ -19,47 +19,83 @@ const videoQualities = [
 ];
 
 const audioQualities = [
-  { id: "128", label: "128 kbps MP3", description: "Low", compat: "WMP • VLC" },
+  {
+    id: "128",
+    label: "128 kbps MP3",
+    description: "Low",
+    compat: "WMP • VLC",
+    mobile: "iOS • Android",
+  },
   {
     id: "192",
     label: "192 kbps MP3",
     description: "Medium",
     compat: "WMP • VLC",
+    mobile: "iOS • Android",
   },
   {
     id: "256",
     label: "256 kbps MP3",
     description: "High",
     compat: "WMP • VLC",
+    mobile: "iOS • Android",
   },
   {
     id: "320",
     label: "320 kbps MP3",
     description: "Very High",
     compat: "WMP • VLC",
+    mobile: "iOS • Android",
   },
   {
     id: "lossless",
     label: "FLAC",
     description: "Highest",
     compat: "WMP • VLC",
+    mobile: "Android",
   },
   {
     id: "aac",
     label: "AAC (M4A)",
     description: "Optimized",
     compat: "WMP • VLC",
+    mobile: "iOS • Android",
   },
   {
     id: "alac",
     label: "ALAC (M4A)",
     description: "Lossless",
     compat: "WMP • VLC",
+    mobile: "iOS",
   },
-  { id: "ogg", label: "OGG Vorbis", description: "Open", compat: "VLC" },
-  { id: "wav", label: "WAV", description: "Uncompressed", compat: "WMP • VLC" },
-  { id: "opus", label: "Opus 128", description: "Efficient", compat: "VLC" },
-  { id: "opus192", label: "Opus 192", description: "Balanced", compat: "VLC" },
+  {
+    id: "ogg",
+    label: "OGG Vorbis",
+    description: "Open",
+    compat: "VLC",
+    mobile: "iOS • Android",
+  },
+  {
+    id: "wav",
+    label: "WAV",
+    description: "Uncompressed",
+    compat: "WMP • VLC",
+    mobile: "iOS • Android",
+  },
+  {
+    id: "opus",
+    label: "Opus 128",
+    description: "Efficient",
+    compat: "VLC",
+    mobile: "iOS • Android",
+  },
+  {
+    id: "opus192",
+    label: "Opus 192",
+    description: "Balanced",
+    compat: "VLC",
+    mobile: "iOS • Android",
+  },
 ];
 
 export default function QualitySelector({
@@ -94,6 +130,11 @@ export default function QualitySelector({
           {(q as any).compat && (
             <div className="text-xs text-sunset-300 font-medium mt-1">
               ✓ {(q as any).compat}
+            </div>
+          )}
+          {(q as any).mobile && (
+            <div className="text-xs text-sunset-300 mt-1">
+              📱 {(q as any).mobile}
             </div>
           )}
         </button>
