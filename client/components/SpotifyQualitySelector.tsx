@@ -164,13 +164,22 @@ export default function SpotifyQualitySelector({
                 ? "📊 Studio-quality FLAC for audiophiles"
                 : selectedQuality.id === "aac"
                   ? "🎵 AAC format - great alternative with excellent compatibility"
-                  : `🎵 ${selectedQuality.info}`}
+                  : selectedQuality.id === "alac"
+                    ? "🎵 Apple Lossless - excellent compatibility with all players"
+                    : selectedQuality.id === "ogg"
+                      ? "🎵 OGG Vorbis - optimized for VLC media player"
+                      : selectedQuality.id === "wav"
+                        ? "🎵 WAV - uncompressed, maximum compatibility"
+                        : `🎵 ${selectedQuality.info}`}
             </p>
             <p className="text-sunset-400 text-xs">
-              ✓ Windows Media Player compatible
-              {selectedQuality.format === "MP3" && " • Universal support"}
-              {selectedQuality.format === "M4A" && " • Works on most devices"}
-              {selectedQuality.format === "FLAC" && " • Premium quality"}
+              ✓ VLC Media Player
+              {selectedQuality.format === "MP3" && " • Windows Media Player • Universal support"}
+              {selectedQuality.format === "M4A" && " • Windows Media Player • All devices"}
+              {selectedQuality.format === "FLAC" && " • Windows Media Player • Premium quality"}
+              {selectedQuality.format === "WAV" && " • Windows Media Player • Maximum compatibility"}
+              {selectedQuality.format === "OGG" && " • Optimized format"}
+              {selectedQuality.format === "ALAC" && " • Windows Media Player • Lossless"}
             </p>
           </>
         )}
