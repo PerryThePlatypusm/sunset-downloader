@@ -35,6 +35,25 @@ const DEFAULT_QUALITY: Record<string, string> = {
   audio: "320",
 };
 
+const QUALITY_FORMATS: Record<string, string> = {
+  "128": "mp3",
+  "192": "mp3",
+  "256": "mp3",
+  "320": "mp3",
+  lossless: "flac",
+  aac: "m4a",
+  opus: "opus",
+  opus192: "opus",
+};
+
+const MIME_TYPES: Record<string, string> = {
+  mp3: "audio/mpeg",
+  m4a: "audio/mp4",
+  flac: "audio/flac",
+  opus: "audio/opus",
+  mp4: "video/mp4",
+};
+
 export const handleDownload: RequestHandler = async (req, res) => {
   try {
     const body = req.body as DownloadRequest;
