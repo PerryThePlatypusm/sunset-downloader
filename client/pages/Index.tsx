@@ -126,7 +126,12 @@ export default function Index() {
       const downloadUrl = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = downloadUrl;
-      a.download = `media_${Date.now()}.${downloadType === "audio" ? "mp3" : "mp4"}`;
+      // Determine file extension based on quality for audio, or use mp4 for video
+      const fileExtension =
+        downloadType === "audio"
+          ? QUALITY_FORMATS[quality] || "mp3"
+          : "mp4";
+      a.download = `media_${Date.now()}.${fileExtension}`;
       document.body.appendChild(a);
 
       try {
