@@ -29,7 +29,11 @@ function createValidMP3(): Buffer {
   }
 
   // Create MP3 frames
-  for (let f = 0; f < frameCount && offset < mp3Buffer.length - frameSize; f++) {
+  for (
+    let f = 0;
+    f < frameCount && offset < mp3Buffer.length - frameSize;
+    f++
+  ) {
     // Write frame sync header
     frameHeader.copy(mp3Buffer, offset);
     offset += 4;
@@ -63,44 +67,57 @@ function createValidWAV(): Buffer {
   let offset = 0;
 
   // "RIFF" chunk descriptor
-  buffer.write("RIFF", offset); offset += 4;
+  buffer.write("RIFF", offset);
+  offset += 4;
 
   // File size - 8 bytes (will be 36 + audioDataLength)
   const audioDataLength = numSamples * channels * (bitsPerSample / 8);
-  buffer.writeUInt32LE(36 + audioDataLength, offset); offset += 4;
+  buffer.writeUInt32LE(36 + audioDataLength, offset);
+  offset += 4;
 
   // "WAVE" format
-  buffer.write("WAVE", offset); offset += 4;
+  buffer.write("WAVE", offset);
+  offset += 4;
 
   // "fmt " subchunk
-  buffer.write("fmt ", offset); offset += 4;
+  buffer.write("fmt ", offset);
+  offset += 4;
 
   // Subchunk1 size (16 for PCM)
-  buffer.writeUInt32LE(16, offset); offset += 4;
+  buffer.writeUInt32LE(16, offset);
+  offset += 4;
 
   // Audio format (1 = PCM)
-  buffer.writeUInt16LE(1, offset); offset += 2;
+  buffer.writeUInt16LE(1, offset);
+  offset += 2;
 
   // Number of channels
-  buffer.writeUInt16LE(channels, offset); offset += 2;
+  buffer.writeUInt16LE(channels, offset);
+  offset += 2;
 
   // Sample rate
-  buffer.writeUInt32LE(sampleRate, offset); offset += 4;
+  buffer.writeUInt32LE(sampleRate, offset);
+  offset += 4;
 
   // Byte rate
-  buffer.writeUInt32LE(sampleRate * channels * (bitsPerSample / 8), offset); offset += 4;
+  buffer.writeUInt32LE(sampleRate * channels * (bitsPerSample / 8), offset);
+  offset += 4;
 
   // Block align
-  buffer.writeUInt16LE(channels * (bitsPerSample / 8), offset); offset += 2;
+  buffer.writeUInt16LE(channels * (bitsPerSample / 8), offset);
+  offset += 2;
 
   // Bits per sample
-  buffer.writeUInt16LE(bitsPerSample, offset); offset += 2;
+  buffer.writeUInt16LE(bitsPerSample, offset);
+  offset += 2;
 
   // "data" subchunk
-  buffer.write("data", offset); offset += 4;
+  buffer.write("data", offset);
+  offset += 4;
 
   // Subchunk2 size
-  buffer.writeUInt32LE(audioDataLength, offset); offset += 4;
+  buffer.writeUInt32LE(audioDataLength, offset);
+  offset += 4;
 
   // Generate PCM audio data (sine wave at 440Hz)
   const frequency = 440;
@@ -109,7 +126,8 @@ function createValidWAV(): Buffer {
 
   for (let i = 0; i < numSamples; i++) {
     // Calculate sine wave sample
-    const sample = Math.sin((2 * Math.PI * frequency * i) / sampleRate) * 32767 * volume;
+    const sample =
+      Math.sin((2 * Math.PI * frequency * i) / sampleRate) * 32767 * volume;
     const int16 = Math.round(Math.max(-32768, Math.min(32767, sample)));
 
     // Write same sample to both channels
@@ -152,7 +170,11 @@ function createMP4Box(): Buffer {
   let mdatOffset = 0;
 
   // Write video frame NAL units with start codes
-  for (let frameNum = 0; frameNum < 100 && mdatOffset < mediaData.length - 1000; frameNum++) {
+  for (
+    let frameNum = 0;
+    frameNum < 100 && mdatOffset < mediaData.length - 1000;
+    frameNum++
+  ) {
     // NAL unit start code
     mediaData[mdatOffset++] = 0x00;
     mediaData[mdatOffset++] = 0x00;
@@ -168,44 +190,74 @@ function createMP4Box(): Buffer {
   // mvhd (movie header) box
   const mvhdBox = Buffer.alloc(108);
   let mvhdOffset = 0;
-  mvhdBox.writeUInt32BE(108, mvhdOffset); mvhdOffset += 4; // Box size
-  mvhdBox.write("mvhd", mvhdOffset); mvhdOffset += 4; // Box type
-  mvhdBox.writeUInt32BE(0, mvhdOffset); mvhdOffset += 4; // Version and flags
-  mvhdBox.writeUInt32BE(0, mvhdOffset); mvhdOffset += 4; // Creation time
-  mvhdBox.writeUInt32BE(0, mvhdOffset); mvhdOffset += 4; // Modification time
-  mvhdBox.writeUInt32BE(1000, mvhdOffset); mvhdOffset += 4; // Timescale (1000 ticks per second)
-  mvhdBox.writeUInt32BE(5000, mvhdOffset); mvhdOffset += 4; // Duration (5 seconds)
-  mvhdBox.writeUInt32BE(0x00010000, mvhdOffset); mvhdOffset += 4; // Playback speed (1.0)
-  mvhdBox.writeUInt16BE(0x0100, mvhdOffset); mvhdOffset += 2; // Volume (1.0)
+  mvhdBox.writeUInt32BE(108, mvhdOffset);
+  mvhdOffset += 4; // Box size
+  mvhdBox.write("mvhd", mvhdOffset);
+  mvhdOffset += 4; // Box type
+  mvhdBox.writeUInt32BE(0, mvhdOffset);
+  mvhdOffset += 4; // Version and flags
+  mvhdBox.writeUInt32BE(0, mvhdOffset);
+  mvhdOffset += 4; // Creation time
+  mvhdBox.writeUInt32BE(0, mvhdOffset);
+  mvhdOffset += 4; // Modification time
+  mvhdBox.writeUInt32BE(1000, mvhdOffset);
+  mvhdOffset += 4; // Timescale (1000 ticks per second)
+  mvhdBox.writeUInt32BE(5000, mvhdOffset);
+  mvhdOffset += 4; // Duration (5 seconds)
+  mvhdBox.writeUInt32BE(0x00010000, mvhdOffset);
+  mvhdOffset += 4; // Playback speed (1.0)
+  mvhdBox.writeUInt16BE(0x0100, mvhdOffset);
+  mvhdOffset += 2; // Volume (1.0)
   mvhdOffset += 10; // Reserved
   // Identity matrix
-  mvhdBox.writeUInt32BE(0x00010000, mvhdOffset); mvhdOffset += 4;
-  mvhdBox.writeUInt32BE(0, mvhdOffset); mvhdOffset += 4;
-  mvhdBox.writeUInt32BE(0, mvhdOffset); mvhdOffset += 4;
-  mvhdBox.writeUInt32BE(0, mvhdOffset); mvhdOffset += 4;
-  mvhdBox.writeUInt32BE(0x00010000, mvhdOffset); mvhdOffset += 4;
-  mvhdBox.writeUInt32BE(0, mvhdOffset); mvhdOffset += 4;
-  mvhdBox.writeUInt32BE(0, mvhdOffset); mvhdOffset += 4;
-  mvhdBox.writeUInt32BE(0, mvhdOffset); mvhdOffset += 4;
-  mvhdBox.writeUInt32BE(0x40000000, mvhdOffset); mvhdOffset += 4;
-  mvhdBox.writeUInt32BE(0, mvhdOffset); mvhdOffset += 4; // Preview time
+  mvhdBox.writeUInt32BE(0x00010000, mvhdOffset);
+  mvhdOffset += 4;
+  mvhdBox.writeUInt32BE(0, mvhdOffset);
+  mvhdOffset += 4;
+  mvhdBox.writeUInt32BE(0, mvhdOffset);
+  mvhdOffset += 4;
+  mvhdBox.writeUInt32BE(0, mvhdOffset);
+  mvhdOffset += 4;
+  mvhdBox.writeUInt32BE(0x00010000, mvhdOffset);
+  mvhdOffset += 4;
+  mvhdBox.writeUInt32BE(0, mvhdOffset);
+  mvhdOffset += 4;
+  mvhdBox.writeUInt32BE(0, mvhdOffset);
+  mvhdOffset += 4;
+  mvhdBox.writeUInt32BE(0, mvhdOffset);
+  mvhdOffset += 4;
+  mvhdBox.writeUInt32BE(0x40000000, mvhdOffset);
+  mvhdOffset += 4;
+  mvhdBox.writeUInt32BE(0, mvhdOffset);
+  mvhdOffset += 4; // Preview time
   mvhdBox.writeUInt32BE(2, mvhdOffset); // Next track ID
 
   // tkhd (track header) box - minimal track info
   const tkhdBox = Buffer.alloc(92);
   let tkhdOffset = 0;
-  tkhdBox.writeUInt32BE(92, tkhdOffset); tkhdOffset += 4; // Box size
-  tkhdBox.write("tkhd", tkhdOffset); tkhdOffset += 4; // Box type
-  tkhdBox.writeUInt32BE(0x0000000f, tkhdOffset); tkhdOffset += 4; // Version and flags
-  tkhdBox.writeUInt32BE(0, tkhdOffset); tkhdOffset += 4; // Creation time
-  tkhdBox.writeUInt32BE(0, tkhdOffset); tkhdOffset += 4; // Modification time
-  tkhdBox.writeUInt32BE(1, tkhdOffset); tkhdOffset += 4; // Track ID
-  tkhdBox.writeUInt32BE(0, tkhdOffset); tkhdOffset += 4; // Reserved
-  tkhdBox.writeUInt32BE(5000, tkhdOffset); tkhdOffset += 4; // Duration
+  tkhdBox.writeUInt32BE(92, tkhdOffset);
+  tkhdOffset += 4; // Box size
+  tkhdBox.write("tkhd", tkhdOffset);
+  tkhdOffset += 4; // Box type
+  tkhdBox.writeUInt32BE(0x0000000f, tkhdOffset);
+  tkhdOffset += 4; // Version and flags
+  tkhdBox.writeUInt32BE(0, tkhdOffset);
+  tkhdOffset += 4; // Creation time
+  tkhdBox.writeUInt32BE(0, tkhdOffset);
+  tkhdOffset += 4; // Modification time
+  tkhdBox.writeUInt32BE(1, tkhdOffset);
+  tkhdOffset += 4; // Track ID
+  tkhdBox.writeUInt32BE(0, tkhdOffset);
+  tkhdOffset += 4; // Reserved
+  tkhdBox.writeUInt32BE(5000, tkhdOffset);
+  tkhdOffset += 4; // Duration
   tkhdOffset += 8; // Reserved
-  tkhdBox.writeUInt16BE(0, tkhdOffset); tkhdOffset += 2; // Layer
-  tkhdBox.writeUInt16BE(0, tkhdOffset); tkhdOffset += 2; // Alternate group
-  tkhdBox.writeUInt16BE(0x0100, tkhdOffset); tkhdOffset += 2; // Volume
+  tkhdBox.writeUInt16BE(0, tkhdOffset);
+  tkhdOffset += 2; // Layer
+  tkhdBox.writeUInt16BE(0, tkhdOffset);
+  tkhdOffset += 2; // Alternate group
+  tkhdBox.writeUInt16BE(0x0100, tkhdOffset);
+  tkhdOffset += 2; // Volume
   tkhdOffset += 2; // Reserved
   // Matrix
   for (let i = 0; i < 9; i++) {
@@ -217,7 +269,8 @@ function createMP4Box(): Buffer {
     tkhdOffset += 4;
   }
   // Width and height (320x240)
-  tkhdBox.writeUInt32BE(320 << 16, tkhdOffset); tkhdOffset += 4;
+  tkhdBox.writeUInt32BE(320 << 16, tkhdOffset);
+  tkhdOffset += 4;
   tkhdBox.writeUInt32BE(240 << 16, tkhdOffset);
 
   // edts (edit list) box
