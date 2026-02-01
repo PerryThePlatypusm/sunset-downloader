@@ -5,26 +5,33 @@ import {
   detectPlatform,
 } from "../../server/utils/urlUtils";
 
-// Helper function to create valid MP3 file with repeated frames
+// Helper function to create valid MP3 file with proper structure
 function createValidMP3(): Buffer {
-  const id3Header = Buffer.from([
-    0x49, 0x44, 0x33, // "ID3"
-    0x04, 0x00, // Version 2.4.0
-    0x00, // Flags
-    0x00, 0x00, 0x00, 0x00, // Tag size
+  // ID3v2.4 header
+  const id3Header = Buffer.concat([
+    Buffer.from([0x49, 0x44, 0x33]), // "ID3"
+    Buffer.from([0x04, 0x00]), // Version 2.4.0
+    Buffer.from([0x00]), // Flags
+    Buffer.from([0x00, 0x00, 0x00, 0x00]), // Size
   ]);
 
-  // MPEG Layer III frame header (320 kbps, 44.1kHz, no CRC)
-  const mp3Frame = Buffer.from([
-    0xff, 0xfb, // Frame sync + MPEG1
-    0x90, // 320kbps, 44.1kHz
-    0x00, // No padding
+  // Create valid MP3 frames (each 417 bytes for 320kbps at 44.1kHz)
+  const frames = Buffer.alloc(131072); // 128KB of valid MP3 data
+
+  // MP3 frame header for 320 kbps, 44.1kHz, no CRC, no padding
+  const frameHeader = Buffer.from([
+    0xff, 0xfb, // Sync
+    0x90, // MPEG1 Layer3, 320kbps
+    0x00, // 44.1kHz, no padding, no private bit
   ]);
 
-  // Create valid frame data by repeating the frame header multiple times
-  const frames = Buffer.alloc(65536);
-  for (let i = 0; i < frames.length - 4; i += 4) {
-    mp3Frame.copy(frames, i);
+  // Fill with repeating valid MP3 frame headers
+  for (let i = 0; i < frames.length; i += 417) {
+    frameHeader.copy(frames, i);
+    // Add pseudo-frame data to make it look like real MP3
+    for (let j = 4; j < Math.min(417, frames.length - i); j++) {
+      frames[i + j] = 0xaa; // Alternating bits for MP3 data
+    }
   }
 
   return Buffer.concat([id3Header, frames]);
