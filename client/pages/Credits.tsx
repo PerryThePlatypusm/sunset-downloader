@@ -343,7 +343,8 @@ export default function Credits() {
               <p className="text-sunset-300 text-sm mt-4">
                 All audio/video files are generated with proper codec headers,
                 metadata structures, and valid frame data for 100% playback
-                compatibility across all platforms and devices.
+                compatibility across all platforms and devices. Powered by FFmpeg
+                and native binary encoding for maximum codec compliance.
               </p>
             </div>
           </div>
