@@ -317,153 +317,39 @@ export const handleDownload: RequestHandler = async (req, res) => {
       // Create completely valid, playable audio files
       switch (selectedQuality) {
         case "lossless":
-          // FLAC with proper structure
-          const flacSignature = Buffer.from([0x66, 0x4c, 0x61, 0x43]); // "fLaC"
-          // STREAMINFO metadata block
-          const flacMetadata = Buffer.from([
-            0x80, // Last metadata block flag + block type (0 = STREAMINFO)
-            0x00,
-            0x00,
-            0x22, // Metadata block size (34 bytes)
-            0x00,
-            0x00,
-            0x00,
-            0x10, // Min block size
-            0x00,
-            0x00,
-            0x00,
-            0x10, // Max block size
-            0x00,
-            0x00,
-            0x00,
-            0x00, // Min frame size
-            0x00,
-            0x00,
-            0x00,
-            0x00, // Max frame size
-            0xac,
-            0x44,
-            0x00, // Sample rate (44100 Hz)
-            0x03, // Channels (2) + bits per sample
-            0x80,
-            0x00,
-            0x00,
-            0x00,
-            0x00,
-            0x00,
-            0x00, // Total samples
-            0x00,
-            0x00,
-            0x00,
-            0x00,
-            0x00,
-            0x00,
-            0x00, // MD5
-          ]);
-          mockContent = Buffer.concat([
-            flacSignature,
-            flacMetadata,
-            Buffer.alloc(20480, 0x00),
-          ]); // Add audio frames
+          // FLAC - Free Lossless Audio Codec
+          mockContent = createValidFLAC();
           mimeType = "audio/flac";
           break;
         case "aac":
-          // AAC with proper ADTS frames
-          const adtsHeader = Buffer.from([
-            0xff,
-            0xf1, // ADTS sync
-            0x50, // Profile, sample rate, private bit
-            0x80, // Channel config + frame length info
-            0x1f, // Frame length
-            0xfc, // Buffer fullness
-            0x00, // Raw data blocks
-          ]);
-          mockContent = Buffer.concat([adtsHeader, Buffer.alloc(20480, 0x00)]);
+          // AAC - Advanced Audio Coding (M4A)
+          mockContent = createValidAAC();
           mimeType = "audio/mp4";
           break;
         case "alac":
-          // M4A/MP4 file with proper structure
-          const mp4Box = createMP4Box();
-          mockContent = mp4Box;
+          // ALAC - Apple Lossless Audio Codec (M4A)
+          mockContent = createMP4Box();
           mimeType = "audio/mp4";
           break;
         case "ogg":
-          // OGG Vorbis with proper page headers
-          const oggSignature = Buffer.from("OggS");
-          const oggVersion = Buffer.from([0x00]);
-          const oggPageType = Buffer.from([0x02]); // BOS (Beginning of Stream)
-          const oggGranule = Buffer.alloc(8, 0x00);
-          const oggSerial = Buffer.alloc(4, 0x00);
-          const oggSequence = Buffer.alloc(4, 0x00);
-          const oggChecksum = Buffer.alloc(4, 0x00);
-          const oggSegments = Buffer.from([0x00]);
-          mockContent = Buffer.concat([
-            oggSignature,
-            oggVersion,
-            oggPageType,
-            oggGranule,
-            oggSerial,
-            oggSequence,
-            oggChecksum,
-            oggSegments,
-            Buffer.alloc(20480, 0x00),
-          ]);
+          // OGG Vorbis - Open Source Audio Format
+          mockContent = createValidOGG();
           mimeType = "audio/ogg";
           break;
         case "wav":
-          // Complete WAV file with proper RIFF structure
-          const audioData = Buffer.alloc(20480, 0x00);
-          const dataSize = audioData.length;
-          const fileSize = 36 + dataSize;
-          const wavHeader = Buffer.concat([
-            Buffer.from("RIFF"),
-            Buffer.allocUnsafe(4).fill(0),
-            Buffer.from("WAVE"),
-            Buffer.from("fmt "),
-            Buffer.from([0x10, 0x00, 0x00, 0x00]), // Subchunk1 size
-            Buffer.from([0x01, 0x00]), // Audio format (PCM)
-            Buffer.from([0x02, 0x00]), // Num channels (stereo)
-            Buffer.from([0x44, 0xac, 0x00, 0x00]), // Sample rate (44100)
-            Buffer.from([0x10, 0xb1, 0x02, 0x00]), // Byte rate
-            Buffer.from([0x04, 0x00]), // Block align
-            Buffer.from([0x10, 0x00]), // Bits per sample (16)
-            Buffer.from("data"),
-            Buffer.allocUnsafe(4).fill(0),
-          ]);
-          // Fix file size
-          const fileSizeBuf = Buffer.allocUnsafe(4);
-          fileSizeBuf.writeUInt32LE(fileSize, 0);
-          wavHeader.writeUInt32LE(fileSize, 4);
-          const dataSizeBuf = Buffer.allocUnsafe(4);
-          dataSizeBuf.writeUInt32LE(dataSize, 0);
-          wavHeader.writeUInt32LE(dataSize, wavHeader.length - 4);
-          mockContent = Buffer.concat([wavHeader, audioData]);
+          // WAV - Waveform Audio Format (Uncompressed)
+          mockContent = createValidWAV();
           mimeType = "audio/wav";
           break;
         case "opus":
         case "opus192":
-          // Opus with Ogg container
-          const opusOggHeader = Buffer.concat([
-            Buffer.from("OggS"),
-            Buffer.alloc(25, 0x00),
-            Buffer.from("OpusHead"),
-            Buffer.from([
-              0x01, 0x02, 0x38, 0x01, 0x80, 0xbb, 0x00, 0x00, 0x00, 0x00, 0x00,
-            ]),
-            Buffer.alloc(20480, 0x00),
-          ]);
-          mockContent = opusOggHeader;
+          // Opus - Modern Audio Codec (in Ogg container)
+          mockContent = createValidOpus();
           mimeType = "audio/opus";
           break;
         default:
-          // MP3 with ID3v2 tag and proper MPEG frames
-          const id3Header = createID3v2Tag();
-          const mp3Frame = createMP3Frame();
-          mockContent = Buffer.concat([
-            id3Header,
-            mp3Frame,
-            Buffer.alloc(20480, 0x00),
-          ]);
+          // MP3 - MPEG Audio Layer III (all bitrates)
+          mockContent = createValidMP3();
           mimeType = "audio/mpeg";
       }
     } else {
