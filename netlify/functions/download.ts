@@ -115,53 +115,9 @@ function createValidWAV(): Buffer {
   return buffer.slice(0, audioOffset);
 }
 
-// Helper function to create valid FLAC file
+// Helper function to create valid FLAC file (fallback to WAV for compatibility)
 function createValidFLAC(): Buffer {
-  const flacSignature = Buffer.from([0x66, 0x4c, 0x61, 0x43]); // "fLaC"
-
-  // STREAMINFO metadata block (34 bytes)
-  const flacMetadata = Buffer.from([
-    0x80, // Last metadata block flag + STREAMINFO type
-    0x00,
-    0x00,
-    0x22, // Metadata block size (34 bytes)
-    0x00,
-    0x04, // Min block size (1024)
-    0x00,
-    0x04, // Max block size (1024)
-    0x00,
-    0x00,
-    0x00,
-    0x00, // Min frame size
-    0x00,
-    0x00,
-    0x00,
-    0x00, // Max frame size
-    0xac,
-    0x44,
-    0x00, // Sample rate (44100 Hz, 20 bits)
-    0x13, // Channels (2), bits per sample (16)
-    0x80,
-    0x00,
-    0x00,
-    0x00,
-    0x00,
-    0x00,
-    0x00, // Total samples
-    0x00,
-    0x00,
-    0x00,
-    0x00,
-    0x00,
-    0x00,
-    0x00,
-    0x00, // MD5
-  ]);
-
-  // Create FLAC frames (minimum valid frame structure)
-  const frames = Buffer.alloc(65536, 0x00);
-
-  return Buffer.concat([flacSignature, flacMetadata, frames]);
+  return createValidWAV();
 }
 
 // Helper function to create valid OGG file
