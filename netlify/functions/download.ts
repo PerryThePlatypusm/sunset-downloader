@@ -28,6 +28,53 @@ interface DownloadRequest {
   episodes?: number[];
 }
 
+// Cobalt API - Free multi-platform downloader
+async function downloadViaCobalt(
+  url: string,
+  audioOnly: boolean
+): Promise<Buffer> {
+  const cobaltUrl = "https://api.cobalt.tools/api/json";
+
+  const response = await fetch(cobaltUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      url: url,
+      downloadMode: audioOnly ? "audio" : "video",
+      audioFormat: audioOnly ? "mp3" : undefined,
+      videoCodec: audioOnly ? undefined : "h264",
+      quality: audioOnly ? "128" : "720",
+      isAudioOnly: audioOnly,
+      isTtsFetch: false,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Cobalt API error: ${response.status}`);
+  }
+
+  const data = (await response.json()) as any;
+
+  if (data.status === "error") {
+    throw new Error(data.error?.message || "Download failed via Cobalt");
+  }
+
+  if (!data.url) {
+    throw new Error("No download URL returned from Cobalt API");
+  }
+
+  // Download the file from the URL provided by Cobalt
+  const fileResponse = await fetch(data.url);
+  if (!fileResponse.ok) {
+    throw new Error(`Failed to download file: ${fileResponse.status}`);
+  }
+
+  const buffer = await fileResponse.arrayBuffer();
+  return Buffer.from(buffer);
+}
+
 export async function handler(event: any) {
   try {
     const body = JSON.parse(event.body || "{}") as DownloadRequest;
@@ -74,60 +121,55 @@ export async function handler(event: any) {
       };
     }
 
-    // Only YouTube works directly with ytdl-core
-    if (detectedPlatform !== "youtube") {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({
-          error: `${detectedPlatform} is not yet supported. Currently only YouTube is supported.`,
-          info: "Check back soon for more platform support!",
-        }),
-      };
-    }
+    let fileBuffer: Buffer;
+    let fileName: string;
+    const timestamp = new Date().toISOString().slice(0, 10);
+    const extension = audioOnly ? "mp3" : "mp4";
 
     try {
-      // Get video info
-      const videoInfo = await ytdl.getInfo(normalizedUrl);
-      const title = videoInfo.videoDetails.title
-        .replace(/[<>:"/\\|?*]/g, "")
-        .substring(0, 100);
+      // Use ytdl-core for YouTube (best quality and speed)
+      if (detectedPlatform === "youtube") {
+        const videoInfo = await ytdl.getInfo(normalizedUrl);
+        const title = videoInfo.videoDetails.title
+          .replace(/[<>:"/\\|?*]/g, "")
+          .substring(0, 100);
 
-      let format;
-      if (audioOnly) {
-        // Get best audio format
-        format = ytdl.chooseFormat(videoInfo.formats, {
-          quality: "highestaudio",
-        });
+        let format;
+        if (audioOnly) {
+          format = ytdl.chooseFormat(videoInfo.formats, {
+            quality: "highestaudio",
+          });
+        } else {
+          const qualityNumber = parseInt(quality || "720");
+          format = ytdl.chooseFormat(videoInfo.formats, {
+            quality: qualityNumber,
+          });
+        }
+
+        if (!format) {
+          return {
+            statusCode: 400,
+            body: JSON.stringify({
+              error: "No suitable format found for this video",
+            }),
+          };
+        }
+
+        const stream = ytdl(normalizedUrl, { format });
+        const chunks: Buffer[] = [];
+        for await (const chunk of stream) {
+          chunks.push(chunk as Buffer);
+        }
+
+        fileBuffer = Buffer.concat(chunks);
+        fileName = `${title}.${extension}`;
       } else {
-        // Get best video format based on quality selection
-        let qualityNumber = parseInt(quality || "720");
-        format = ytdl.chooseFormat(videoInfo.formats, {
-          quality: qualityNumber,
-        });
+        // Use Cobalt API for other platforms
+        fileBuffer = await downloadViaCobalt(normalizedUrl, audioOnly || false);
+        fileName = `media_${timestamp}.${extension}`;
       }
 
-      if (!format) {
-        return {
-          statusCode: 400,
-          body: JSON.stringify({
-            error: "No suitable format found for this video",
-          }),
-        };
-      }
-
-      // Download the stream
-      const stream = ytdl(normalizedUrl, { format });
-
-      // Collect chunks
-      const chunks: Buffer[] = [];
-      for await (const chunk of stream) {
-        chunks.push(chunk as Buffer);
-      }
-
-      const fileBuffer = Buffer.concat(chunks);
       const base64 = fileBuffer.toString("base64");
-      const extension = audioOnly ? "mp3" : "mp4";
-      const fileName = `${title}.${extension}`;
 
       return {
         statusCode: 200,
@@ -143,17 +185,26 @@ export async function handler(event: any) {
     } catch (downloadError: any) {
       console.error("Download error:", downloadError);
 
-      // Friendly error messages
-      let errorMessage = "Failed to download video";
-      if (downloadError.message?.includes("Sign in")) {
+      let errorMessage = "Failed to download media";
+      const errorStr = downloadError.message?.toLowerCase() || "";
+
+      if (
+        errorStr.includes("private") ||
+        errorStr.includes("authentication")
+      ) {
         errorMessage =
-          "This video requires authentication. Please check if it's publicly available.";
-      } else if (downloadError.message?.includes("unavailable")) {
+          "This content requires authentication or is not publicly available.";
+      } else if (
+        errorStr.includes("unavailable") ||
+        errorStr.includes("removed")
+      ) {
         errorMessage =
-          "This video is unavailable or has been removed. Please try a different video.";
-      } else if (downloadError.message?.includes("private")) {
+          "This content is unavailable or has been removed. Please check the link.";
+      } else if (errorStr.includes("404")) {
+        errorMessage = "The content could not be found. Please check the URL.";
+      } else if (errorStr.includes("age")) {
         errorMessage =
-          "This is a private video. Please check the link and permissions.";
+          "This content is age-restricted. Please verify access.";
       }
 
       return {
