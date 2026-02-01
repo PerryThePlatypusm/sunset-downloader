@@ -182,8 +182,8 @@ export async function handler(event: any) {
 
     console.log("[Handler] Starting download...");
 
-    // Download using RAW URL without normalization
-    const { buffer, filename } = await downloadViaCobalt(
+    // Download using FastSaverAPI
+    const { buffer, filename } = await downloadViaFastSaver(
       trimmedUrl,
       audioOnly || false,
     );
