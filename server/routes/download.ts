@@ -1,12 +1,5 @@
 import { RequestHandler } from "express";
 import { detectPlatform, isValidUrl, normalizeUrl } from "../utils/urlUtils";
-import { exec } from "child_process";
-import { promisify } from "util";
-import * as fs from "fs";
-import * as path from "path";
-import * as os from "os";
-
-const execAsync = promisify(exec);
 
 interface DownloadRequest {
   url: string;
@@ -31,39 +24,85 @@ const SUPPORTED_PLATFORMS = [
   "pinterest",
 ];
 
-const QUALITY_MAP: Record<string, string> = {
-  // Video qualities
-  "240": "worst",
-  "360": "worse",
-  "480": "worseaudio/worst",
-  "720": "best[height<=720]",
-  "1080": "best[height<=1080]",
-  "2160": "best[height<=2160]",
-  "4k": "best[height<=2160]",
-  // Audio qualities (bitrates)
-  "128": "worst",
-  "192": "worseaudio",
-  "256": "worseaudio",
-  "320": "bestaudio",
-  // Lossless audio
-  flac: "bestaudio",
-  alac: "bestaudio",
-  lossless: "bestaudio",
-  highest: "bestaudio",
-};
+// Download via Cobalt API
+async function downloadViaCobalt(
+  url: string,
+  audioOnly: boolean,
+): Promise<{ buffer: Buffer; filename: string }> {
+  const cobaltUrl = "https://api.cobalt.tools/api/json";
 
-// Temporary directory for downloads (cross-platform)
-const TEMP_DIR = path.join(os.tmpdir(), "sunset-downloads");
-if (!fs.existsSync(TEMP_DIR)) {
-  fs.mkdirSync(TEMP_DIR, { recursive: true });
+  const requestPayload = {
+    url: url,
+    downloadMode: audioOnly ? "audio" : "video",
+  };
+
+  console.log("[Cobalt] Requesting:", url);
+
+  const response = await fetch(cobaltUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(requestPayload),
+    signal: AbortSignal.timeout(60000),
+  });
+
+  console.log("[Cobalt] Response status:", response.status);
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("[Cobalt] Error response:", errorText);
+    throw new Error(`API error ${response.status}`);
+  }
+
+  const data = (await response.json()) as any;
+
+  if (data.status === "error" || data.error) {
+    throw new Error(data.error?.message || "Download failed");
+  }
+
+  if (!data.url) {
+    throw new Error("No download URL returned");
+  }
+
+  console.log("[Cobalt] Got download URL, fetching file");
+
+  // Fetch the media file
+  const fileResponse = await fetch(data.url, {
+    signal: AbortSignal.timeout(60000),
+  });
+
+  if (!fileResponse.ok) {
+    throw new Error(`File fetch failed: ${fileResponse.status}`);
+  }
+
+  const buffer = await fileResponse.arrayBuffer();
+
+  if (buffer.byteLength === 0) {
+    throw new Error("Empty file");
+  }
+
+  console.log("[Cobalt] Downloaded:", buffer.byteLength, "bytes");
+
+  let filename = data.filename || `download_${Date.now()}`;
+  const ext = audioOnly ? "mp3" : "mp4";
+  if (!filename.includes(`.${ext}`)) {
+    filename = `${filename}.${ext}`;
+  }
+
+  return {
+    buffer: Buffer.from(buffer),
+    filename,
+  };
 }
 
 export const handleDownload: RequestHandler = async (req, res) => {
-  let tempFile: string | null = null;
-
   try {
     const body = req.body as DownloadRequest;
     const { url, platform, quality, audioOnly } = body;
+
+    console.log("[Download] Request received");
+    console.log("[Download] URL:", url);
 
     // Validate URL
     if (!url || typeof url !== "string" || !url.trim()) {
@@ -92,194 +131,57 @@ export const handleDownload: RequestHandler = async (req, res) => {
       detectedPlatform = detectPlatform(normalizedUrl);
     }
 
+    console.log("[Download] Platform:", detectedPlatform);
+
     if (!detectedPlatform || !SUPPORTED_PLATFORMS.includes(detectedPlatform)) {
       return res.status(400).json({
         error: `Unsupported platform. Supported: ${SUPPORTED_PLATFORMS.join(", ")}`,
       });
     }
 
-    // Determine output format and quality
-    let outputFormat = "mp4";
-    let qualityFormat = "best";
+    console.log("[Download] Starting Cobalt download");
 
-    if (audioOnly) {
-      outputFormat = "mp3";
-      qualityFormat = QUALITY_MAP[quality || "320"] || "bestaudio";
-    } else {
-      qualityFormat = QUALITY_MAP[quality || "720"] || "best";
-    }
-
-    // Generate temp filename
-    const timestamp = Date.now();
-    const outputTemplate = path.join(
-      TEMP_DIR,
-      `download_${timestamp}_%(title)s.%(ext)s`,
+    // Download via Cobalt
+    const { buffer, filename } = await downloadViaCobalt(
+      normalizedUrl,
+      audioOnly || false
     );
 
-    // Build yt-dlp command
-    let command = `yt-dlp`;
-    command += ` -f "${qualityFormat}"`;
+    console.log("[Download] Download successful");
 
-    if (audioOnly) {
-      command += ` -x --audio-format mp3 --audio-quality 192K`;
-    } else {
-      command += ` -f "best[ext=mp4]"`;
-    }
-
-    command += ` -o "${outputTemplate}"`;
-    command += ` "${normalizedUrl}"`;
-    command += ` --quiet --no-warnings`;
-
-    console.log(
-      `Starting download: ${detectedPlatform} (${audioOnly ? "audio" : "video"})`,
+    // Set headers
+    res.setHeader(
+      "Content-Type",
+      audioOnly ? "audio/mpeg" : "video/mp4"
     );
-    console.log(`Command: ${command.substring(0, 100)}...`);
-
-    // Execute download with better error handling
-    let downloadError: string | null = null;
-    try {
-      const { stdout, stderr } = await execAsync(command, {
-        timeout: 120000,
-        maxBuffer: 1024 * 1024 * 10, // 10MB buffer
-      });
-      if (stderr) {
-        console.warn("yt-dlp warnings:", stderr);
-      }
-    } catch (error: any) {
-      console.error("yt-dlp error:", error);
-      downloadError = error.message || String(error);
-
-      // Check if yt-dlp is installed
-      if (
-        downloadError.includes("not found") ||
-        downloadError.includes("ENOENT") ||
-        downloadError.includes("command not found")
-      ) {
-        return res.status(503).json({
-          error: "yt-dlp is not installed on this server",
-          details: "yt-dlp binary not found in system PATH",
-          instruction:
-            "Run: pip install yt-dlp (then ensure it's in your PATH)",
-          platform: process.platform,
-        });
-      }
-
-      // Network or URL-related errors
-      if (
-        downloadError.includes("404") ||
-        downloadError.includes("unavailable") ||
-        downloadError.includes("private")
-      ) {
-        return res.status(400).json({
-          error: "The video/audio is not available or the URL is invalid",
-          details: downloadError,
-        });
-      }
-
-      return res.status(400).json({
-        error: "Failed to download. Please check the URL and try again.",
-        details: downloadError,
-      });
-    }
-
-    // Find the downloaded file
-    let downloadedFile: string | undefined;
-    try {
-      const files = fs.readdirSync(TEMP_DIR);
-      downloadedFile = files.find(
-        (f) => f.startsWith(`download_${timestamp}_`) && !f.startsWith("."),
-      );
-    } catch (error) {
-      console.error("Error reading temp directory:", error);
-      return res.status(500).json({
-        error: "Failed to access temporary directory",
-        details: String(error),
-      });
-    }
-
-    if (!downloadedFile) {
-      console.error(`File not found in ${TEMP_DIR}`);
-      console.error("Available files:", fs.readdirSync(TEMP_DIR));
-      return res.status(500).json({
-        error: "Download completed but file not found",
-        debug: "Check server logs for details",
-      });
-    }
-
-    tempFile = path.join(TEMP_DIR, downloadedFile);
-    let fileStats: fs.Stats;
-    try {
-      fileStats = fs.statSync(tempFile);
-    } catch (error) {
-      console.error("Error accessing file:", error);
-      return res.status(500).json({
-        error: "Downloaded file exists but cannot be accessed",
-        details: String(error),
-      });
-    }
-
-    if (fileStats.size === 0) {
-      try {
-        fs.unlinkSync(tempFile);
-      } catch {
-        // Ignore cleanup errors
-      }
-      return res.status(400).json({
-        error: "Downloaded file is empty. The source might not have content.",
-      });
-    }
-
-    console.log(`Download successful: ${fileName} (${fileStats.size} bytes)`);
-
-    // Determine MIME type
-    const mimeType = audioOnly ? "audio/mpeg" : "video/mp4";
-    const fileName = downloadedFile
-      .replace(`download_${timestamp}_`, "")
-      .replace(/\.\w+$/, `.${outputFormat}`);
-
-    // Stream file
-    res.setHeader("Content-Type", mimeType);
-    res.setHeader("Content-Length", fileStats.size.toString());
-    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+    res.setHeader("Content-Length", buffer.length.toString());
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
     res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     res.setHeader("Accept-Ranges", "bytes");
     res.setHeader("Access-Control-Allow-Origin", "*");
 
-    // Stream the file and cleanup after
-    const fileStream = fs.createReadStream(tempFile);
-    fileStream.pipe(res);
-
-    fileStream.on("end", () => {
-      try {
-        fs.unlinkSync(tempFile!);
-      } catch {
-        // Ignore cleanup errors
-      }
-    });
-
-    fileStream.on("error", (error) => {
-      console.error("Stream error:", error);
-      try {
-        fs.unlinkSync(tempFile!);
-      } catch {
-        // Ignore cleanup errors
-      }
-    });
+    // Send file
+    res.send(buffer);
   } catch (error) {
-    console.error("Download error:", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "An unexpected error occurred";
+    console.error("[Download] Error:", error);
 
-    // Cleanup temp file if it exists
-    if (tempFile && fs.existsSync(tempFile)) {
-      try {
-        fs.unlinkSync(tempFile);
-      } catch {
-        // Ignore cleanup errors
+    let errorMsg = "Failed to download media";
+
+    if (error instanceof Error) {
+      if (error.message.includes("timeout")) {
+        errorMsg = "Download timed out. Please try again.";
+      } else if (error.message.includes("404")) {
+        errorMsg = "Content not found.";
+      } else if (error.message.includes("Empty")) {
+        errorMsg = "No content found.";
+      } else if (error.message.includes("400")) {
+        errorMsg = "URL not recognized.";
+      } else {
+        errorMsg = error.message;
       }
     }
 
-    return res.status(500).json({ error: errorMessage });
+    return res.status(400).json({ error: errorMsg });
   }
 };
 
@@ -319,7 +221,7 @@ export const validateUrl: RequestHandler = (req, res) => {
       url: normalizedUrl,
     });
   } catch (error) {
-    console.error("Validation error:", error);
+    console.error("[Validation] Error:", error);
     res.status(500).json({
       valid: false,
       error: "Validation failed",
