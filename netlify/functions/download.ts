@@ -244,23 +244,9 @@ function createMP4Box(): Buffer {
   return Buffer.concat([ftypBox, moovBox, mdatBox]);
 }
 
-// Helper function to create valid Opus file
+// Helper function to create valid Opus file (fallback to WAV for compatibility)
 function createValidOpus(): Buffer {
-  const opusOggPage = Buffer.concat([
-    Buffer.from("OggS"), // Capture pattern
-    Buffer.from([0x00]), // Version
-    Buffer.from([0x02]), // BOS flag
-    Buffer.alloc(8, 0x00), // Granule position
-    Buffer.alloc(4, 0x01), // Serial number
-    Buffer.alloc(4, 0x00), // Sequence number
-    Buffer.alloc(4, 0x00), // Checksum
-    Buffer.from([0x01]), // Page segments
-    Buffer.from([0x08]), // Segment size
-    Buffer.from("OpusHead"), // Opus identification
-  ]);
-
-  const audioData = Buffer.alloc(65536, 0x00);
-  return Buffer.concat([opusOggPage, audioData]);
+  return createValidWAV();
 }
 
 const SUPPORTED_PLATFORMS = [
