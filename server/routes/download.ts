@@ -42,77 +42,37 @@ function createValidMP3(): Buffer {
 
 // Helper function to create valid WAV file with proper PCM audio
 function createValidWAV(): Buffer {
-  // Create 3 seconds of audio at 44100Hz, 16-bit mono
+  // Use wav library to create a proper WAV file
   const sampleRate = 44100;
+  const channels = 2;
+  const bitsPerSample = 16;
   const duration = 3; // seconds
   const numSamples = sampleRate * duration;
-  const channels = 1;
-  const bitsPerSample = 16;
-  const bytesPerSample = bitsPerSample / 8;
 
-  // Build WAV file piece by piece to ensure correct offsets
-  const chunks: Buffer[] = [];
+  // Create the WAV encoder
+  const encoder = new wav.Writer(Buffer.alloc(numSamples * channels * (bitsPerSample / 8) + 44), {
+    channels: channels,
+    sampleRate: sampleRate,
+    bitDepth: bitsPerSample,
+  });
 
-  // RIFF header
-  chunks.push(Buffer.from("RIFF"));
-
-  // File size (will update later)
-  const fileSizePos = chunks.reduce((sum, b) => sum + b.length, 0);
-  chunks.push(Buffer.alloc(4));
-
-  // WAVE format
-  chunks.push(Buffer.from("WAVE"));
-
-  // fmt subchunk
-  chunks.push(Buffer.from("fmt "));
-  chunks.push(Buffer.from([0x10, 0x00, 0x00, 0x00])); // Subchunk1 size (16)
-  chunks.push(Buffer.from([0x01, 0x00])); // Audio format (1 = PCM)
-  chunks.push(Buffer.from([0x01, 0x00])); // Number of channels (1 = mono)
-
-  // Sample rate (44100 = 0x0000AC44 in little-endian)
-  const sampleRateBuf = Buffer.alloc(4);
-  sampleRateBuf.writeUInt32LE(sampleRate, 0);
-  chunks.push(sampleRateBuf);
-
-  // Byte rate (sample rate * num channels * bits per sample / 8)
-  const byteRate = sampleRate * channels * bitsPerSample / 8;
-  const byteRateBuf = Buffer.alloc(4);
-  byteRateBuf.writeUInt32LE(byteRate, 0);
-  chunks.push(byteRateBuf);
-
-  // Block align
-  chunks.push(Buffer.from([channels * bytesPerSample, 0x00]));
-
-  // Bits per sample
-  chunks.push(Buffer.from([bitsPerSample, 0x00]));
-
-  // data subchunk
-  chunks.push(Buffer.from("data"));
-
-  // Data size (will update later)
-  const dataSizePos = chunks.reduce((sum, b) => sum + b.length, 0);
-  chunks.push(Buffer.alloc(4));
-
-  // Concatenate header
-  const header = Buffer.concat(chunks);
-
-  // Generate PCM audio data (simple sine wave)
-  const audioData = Buffer.alloc(numSamples * bytesPerSample);
+  // Generate PCM audio data (sine wave tone)
   const frequency = 440; // A4 note
+  const volume = 0.3; // 30% volume to avoid clipping
 
   for (let i = 0; i < numSamples; i++) {
-    const sample = Math.sin((2 * Math.PI * frequency * i) / sampleRate) * 32767 * 0.5;
+    const sample = Math.sin((2 * Math.PI * frequency * i) / sampleRate) * 32767 * volume;
     const int16 = Math.round(Math.max(-32768, Math.min(32767, sample)));
-    audioData.writeInt16LE(int16, i * bytesPerSample);
+
+    // Write the same sample to both channels
+    for (let ch = 0; ch < channels; ch++) {
+      encoder.writeInt16LE(int16);
+    }
   }
 
-  // Update file size (everything except the first 8 bytes)
-  header.writeUInt32LE(header.length - 8 + audioData.length, fileSizePos);
-
-  // Update data size
-  header.writeUInt32LE(audioData.length, dataSizePos);
-
-  return Buffer.concat([header, audioData]);
+  encoder.end();
+  const result = encoder.getContents();
+  return result && result.length > 0 ? result : Buffer.alloc(0);
 }
 
 // Helper function to create valid FLAC file
