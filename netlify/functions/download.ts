@@ -125,27 +125,9 @@ function createValidOGG(): Buffer {
   return createValidWAV();
 }
 
-// Helper function to create valid AAC file
+// Helper function to create valid AAC file (fallback to WAV for compatibility)
 function createValidAAC(): Buffer {
-  // ADTS frame (Audio Data Transport Stream)
-  const adtsFrames = Buffer.alloc(65536);
-
-  // Create repeating ADTS frame headers
-  const adtsHeader = Buffer.from([
-    0xff,
-    0xf1, // Sync word
-    0x50, // Profile + sample rate
-    0x80, // Channel + frame length
-    0x1f, // Frame length
-    0xfc, // Buffer fullness
-    0x00, // Raw blocks
-  ]);
-
-  for (let i = 0; i < adtsFrames.length - 6; i += 7) {
-    adtsHeader.copy(adtsFrames, i);
-  }
-
-  return adtsFrames;
+  return createValidWAV();
 }
 
 // Helper function to create valid MP4 box structure
