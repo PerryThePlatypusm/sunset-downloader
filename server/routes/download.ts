@@ -24,6 +24,15 @@ const SUPPORTED_PLATFORMS = [
   "pinterest",
 ];
 
+// Try importing ytdl-core - it may or may not be available
+let ytdl: any;
+try {
+  ytdl = require("ytdl-core");
+  console.log("[Init] ytdl-core loaded successfully");
+} catch (e) {
+  console.log("[Init] ytdl-core not available, will use Cobalt only");
+}
+
 // Download via Cobalt API
 async function downloadViaCobalt(
   url: string,
@@ -33,102 +42,150 @@ async function downloadViaCobalt(
 
   console.log("[Cobalt] Input URL:", url);
 
-  // Make sure URL has protocol
-  let finalUrl = url;
-  if (!finalUrl.startsWith("http://") && !finalUrl.startsWith("https://")) {
-    finalUrl = "https://" + finalUrl;
-  }
-
-  console.log("[Cobalt] Final URL:", finalUrl);
-
   const requestPayload = {
-    url: finalUrl,
+    url: url,
     downloadMode: audioOnly ? "audio" : "video",
   };
 
-  console.log(
-    "[Cobalt] Sending request with payload:",
-    JSON.stringify(requestPayload),
-  );
+  console.log("[Cobalt] Request payload:", JSON.stringify(requestPayload));
 
-  const response = await fetch(cobaltUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(requestPayload),
-    signal: AbortSignal.timeout(60000),
-  });
-
-  console.log("[Cobalt] Response status:", response.status);
-
-  const responseText = await response.text();
-  console.log(
-    "[Cobalt] Response text (first 500 chars):",
-    responseText.substring(0, 500),
-  );
-
-  if (!response.ok) {
-    console.error("[Cobalt] HTTP Error:", response.status);
-    console.error("[Cobalt] Full response:", responseText);
-    throw new Error(`API error ${response.status}: ${responseText}`);
-  }
-
-  let data: any;
   try {
-    data = JSON.parse(responseText);
-  } catch (e) {
-    console.error("[Cobalt] JSON parse failed:", e);
-    throw new Error("Invalid API response");
+    const response = await fetch(cobaltUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestPayload),
+      signal: AbortSignal.timeout(60000),
+    });
+
+    console.log("[Cobalt] Response status:", response.status);
+
+    const responseText = await response.text();
+    console.log(
+      "[Cobalt] Response text (first 500 chars):",
+      responseText.substring(0, 500),
+    );
+
+    if (!response.ok) {
+      console.error("[Cobalt] HTTP Error:", response.status);
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    let data: any;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      console.error("[Cobalt] JSON parse failed:", e);
+      throw new Error("Invalid response");
+    }
+
+    console.log(
+      "[Cobalt] Parsed response:",
+      JSON.stringify(data).substring(0, 400),
+    );
+
+    if (data.status === "error" || data.error) {
+      const errorMsg = data.error?.message || data.error || "Unknown error";
+      console.error("[Cobalt] API error:", errorMsg);
+      throw new Error(errorMsg);
+    }
+
+    if (!data.url) {
+      console.error("[Cobalt] No URL in response:", JSON.stringify(data));
+      throw new Error("No URL");
+    }
+
+    console.log("[Cobalt] Got download URL");
+
+    const fileResponse = await fetch(data.url, {
+      signal: AbortSignal.timeout(60000),
+    });
+
+    console.log("[Cobalt] File response:", fileResponse.status);
+
+    if (!fileResponse.ok) {
+      throw new Error(`File ${fileResponse.status}`);
+    }
+
+    const buffer = await fileResponse.arrayBuffer();
+
+    if (buffer.byteLength === 0) {
+      throw new Error("Empty");
+    }
+
+    console.log("[Cobalt] Downloaded:", buffer.byteLength, "bytes");
+
+    let filename = data.filename || `download_${Date.now()}`;
+    const ext = audioOnly ? "mp3" : "mp4";
+    if (!filename.includes(`.${ext}`)) {
+      filename = `${filename}.${ext}`;
+    }
+
+    return {
+      buffer: Buffer.from(buffer),
+      filename,
+    };
+  } catch (error) {
+    console.error("[Cobalt] Error:", error);
+    throw error;
+  }
+}
+
+// Download YouTube via ytdl-core
+async function downloadViaYtdl(
+  url: string,
+  audioOnly: boolean,
+): Promise<{ buffer: Buffer; filename: string }> {
+  if (!ytdl) {
+    throw new Error("YouTube downloader not available");
   }
 
-  console.log(
-    "[Cobalt] Parsed response:",
-    JSON.stringify(data).substring(0, 400),
-  );
+  console.log("[YtDL] Downloading:", url);
 
-  if (data.status === "error" || data.error) {
-    const errorMsg = data.error?.message || data.error || "Unknown error";
-    console.error("[Cobalt] API error:", errorMsg);
-    throw new Error(`API: ${errorMsg}`);
+  try {
+    const info = await ytdl.getInfo(url);
+    const title = (info.videoDetails.title || "video")
+      .replace(/[<>:"/\\|?*]/g, "")
+      .substring(0, 100);
+
+    let format;
+    if (audioOnly) {
+      format = ytdl.chooseFormat(info.formats, {
+        quality: "highestaudio",
+      });
+    } else {
+      format = ytdl.chooseFormat(info.formats, {
+        quality: "best",
+      });
+    }
+
+    if (!format) {
+      throw new Error("No format found");
+    }
+
+    console.log("[YtDL] Format selected:", format.qualityLabel || "audio");
+
+    const stream = ytdl(url, { format });
+    const chunks: Buffer[] = [];
+
+    for await (const chunk of stream) {
+      chunks.push(chunk as Buffer);
+    }
+
+    const buffer = Buffer.concat(chunks);
+    console.log("[YtDL] Downloaded:", buffer.byteLength, "bytes");
+
+    const filename = `${title}.${audioOnly ? "mp3" : "mp4"}`;
+
+    return {
+      buffer,
+      filename,
+    };
+  } catch (error) {
+    console.error("[YtDL] Error:", error);
+    throw error;
   }
-
-  if (!data.url) {
-    console.error("[Cobalt] No URL in response:", JSON.stringify(data));
-    throw new Error("No download link generated");
-  }
-
-  console.log("[Cobalt] Got download URL, fetching file");
-
-  // Fetch the media file
-  const fileResponse = await fetch(data.url, {
-    signal: AbortSignal.timeout(60000),
-  });
-
-  console.log("[Cobalt] File response status:", fileResponse.status);
-
-  if (!fileResponse.ok) {
-    throw new Error(`File fetch failed: ${fileResponse.status}`);
-  }
-
-  const buffer = await fileResponse.arrayBuffer();
-
-  if (buffer.byteLength === 0) {
-    throw new Error("Empty file");
-  }
-
-  console.log("[Cobalt] Downloaded:", buffer.byteLength, "bytes");
-
-  let filename = data.filename || `download_${Date.now()}`;
-  const ext = audioOnly ? "mp3" : "mp4";
-  if (!filename.includes(`.${ext}`)) {
-    filename = `${filename}.${ext}`;
-  }
-
-  return {
-    buffer: Buffer.from(buffer),
-    filename,
-  };
 }
 
 export const handleDownload: RequestHandler = async (req, res) => {
@@ -136,14 +193,12 @@ export const handleDownload: RequestHandler = async (req, res) => {
     const body = req.body as DownloadRequest;
     let { url, platform, quality, audioOnly } = body;
 
-    console.log("[Download] ========== NEW REQUEST ==========");
-    console.log("[Download] Raw URL from client:", url);
+    console.log("[Download] ===== REQUEST =====");
+    console.log("[Download] URL:", url);
     console.log("[Download] Platform:", platform);
     console.log("[Download] AudioOnly:", audioOnly);
 
-    // Validate URL
     if (!url || typeof url !== "string" || !url.trim()) {
-      console.error("[Download] URL missing or invalid type");
       return res.status(400).json({ error: "URL is required" });
     }
 
@@ -153,23 +208,18 @@ export const handleDownload: RequestHandler = async (req, res) => {
       return res.status(400).json({ error: "URL is too long" });
     }
 
-    // Normalize URL - but be careful not to break it
     let normalizedUrl: string;
     try {
       normalizedUrl = normalizeUrl(url);
       console.log("[Download] Normalized URL:", normalizedUrl);
     } catch (error) {
-      console.error("[Download] Normalization error:", error);
-      // If normalization fails, just use the URL as-is
       normalizedUrl = url;
     }
 
     if (!isValidUrl(normalizedUrl)) {
-      console.error("[Download] URL validation failed");
       return res.status(400).json({ error: "Invalid URL format" });
     }
 
-    // Detect platform
     let detectedPlatform = platform;
     if (!detectedPlatform) {
       detectedPlatform = detectPlatform(normalizedUrl);
@@ -179,21 +229,33 @@ export const handleDownload: RequestHandler = async (req, res) => {
 
     if (!detectedPlatform || !SUPPORTED_PLATFORMS.includes(detectedPlatform)) {
       return res.status(400).json({
-        error: `Unsupported platform. Supported: ${SUPPORTED_PLATFORMS.join(", ")}`,
+        error: `Unsupported platform`,
       });
     }
 
-    console.log("[Download] Starting Cobalt download...");
+    console.log("[Download] Starting download...");
 
-    // Download via Cobalt
-    const { buffer, filename } = await downloadViaCobalt(
-      normalizedUrl,
-      audioOnly || false,
-    );
+    let buffer: Buffer;
+    let filename: string;
 
-    console.log("[Download] Download successful, sending file");
+    // Use ytdl-core for YouTube if available
+    if (detectedPlatform === "youtube" && ytdl) {
+      console.log("[Download] Using ytdl-core for YouTube");
+      const result = await downloadViaYtdl(normalizedUrl, audioOnly || false);
+      buffer = result.buffer;
+      filename = result.filename;
+    } else {
+      console.log("[Download] Using Cobalt API");
+      const result = await downloadViaCobalt(
+        normalizedUrl,
+        audioOnly || false,
+      );
+      buffer = result.buffer;
+      filename = result.filename;
+    }
 
-    // Set headers
+    console.log("[Download] Success! Sending file:", filename);
+
     res.setHeader("Content-Type", audioOnly ? "audio/mpeg" : "video/mp4");
     res.setHeader("Content-Length", buffer.length.toString());
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
@@ -201,41 +263,29 @@ export const handleDownload: RequestHandler = async (req, res) => {
     res.setHeader("Accept-Ranges", "bytes");
     res.setHeader("Access-Control-Allow-Origin", "*");
 
-    // Send file
     res.send(buffer);
-    console.log("[Download] File sent successfully");
   } catch (error) {
-    console.error("[Download] ========== ERROR ==========");
-    console.error("[Download] Full error:", error);
+    console.error("[Download] ERROR:", error);
 
-    let errorMsg = "Failed to download media";
+    let errorMsg = "Failed to download";
 
     if (error instanceof Error) {
       const msg = error.message;
-      console.error("[Download] Error message:", msg);
-
       if (msg.includes("timeout")) {
-        errorMsg = "Download took too long. Please try again.";
-      } else if (msg.includes("404")) {
-        errorMsg = "Content not found. Please check the URL.";
-      } else if (msg.includes("Empty")) {
-        errorMsg = "No content found.";
-      } else if (msg.includes("API error")) {
-        // Extract the actual API error
-        if (msg.includes("400")) {
-          errorMsg =
-            "The URL format is not recognized. Please try a direct link to the content.";
-        } else {
-          errorMsg = msg;
-        }
-      } else if (msg.includes("Invalid")) {
-        errorMsg = msg;
+        errorMsg = "Download took too long";
+      } else if (msg.includes("private")) {
+        errorMsg = "Content is private";
+      } else if (msg.includes("unavailable")) {
+        errorMsg = "Content unavailable";
+      } else if (msg.includes("not found") || msg.includes("404")) {
+        errorMsg = "Content not found";
+      } else if (msg.includes("No")) {
+        errorMsg = "Could not process URL";
       } else {
         errorMsg = msg;
       }
     }
 
-    console.error("[Download] Sending error response:", errorMsg);
     return res.status(400).json({ error: errorMsg });
   }
 };
@@ -266,7 +316,7 @@ export const validateUrl: RequestHandler = (req, res) => {
       return res.json({
         valid: false,
         detected: platform,
-        error: "Platform not supported or invalid URL for that platform",
+        error: "Platform not supported",
       });
     }
 
