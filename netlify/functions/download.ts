@@ -1,8 +1,4 @@
-import {
-  normalizeUrl,
-  isValidUrl,
-  detectPlatform,
-} from "../../server/utils/urlUtils";
+import { detectPlatform } from "../../server/utils/urlUtils";
 
 const SUPPORTED_PLATFORMS = [
   "youtube",
