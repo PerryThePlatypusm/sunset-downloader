@@ -435,7 +435,7 @@ export default function Index() {
         {/* Footer */}
         <footer className="border-t border-sunset-700/50 backdrop-blur-md bg-sunset-900/50 mt-16">
           <div className="max-w-6xl mx-auto px-4 py-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
               {/* Links Column */}
               <div>
                 <h4 className="text-sunset-200 font-semibold mb-3">
