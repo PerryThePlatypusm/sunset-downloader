@@ -173,21 +173,69 @@ function createValidAAC(): Buffer {
 
 // Helper function to create valid MP4 box structure
 function createMP4Box(): Buffer {
-  const ftypBox = Buffer.concat([
-    Buffer.from([0x00, 0x00, 0x00, 0x20]), // Box size
-    Buffer.from("ftyp"),
-    Buffer.from("isom"),
-    Buffer.from([0x00, 0x00, 0x02, 0x00]),
-    Buffer.from("isomiso2mp41"),
-  ]);
+  // ftyp box - file type box (must be first)
+  const ftypBox = Buffer.alloc(32);
+  ftypBox.writeUInt32BE(32, 0); // Box size
+  ftypBox.write("ftyp", 4); // Box type
+  ftypBox.write("isom", 8); // Major brand
+  ftypBox.writeUInt32BE(0x00000200, 12); // Minor version
+  ftypBox.write("isomiso2mp41", 16); // Compatible brands
 
-  const mdatBox = Buffer.concat([
-    Buffer.from([0x00, 0x00, 0xb0, 0x00]), // Box size
-    Buffer.from("mdat"),
-    Buffer.alloc(45040, 0x00),
-  ]);
+  // Create minimal but valid moov box
+  // mvhd (movie header)
+  const mvhdBox = Buffer.alloc(108);
+  let mvhdOffset = 0;
+  mvhdBox.writeUInt32BE(108, mvhdOffset); mvhdOffset += 4; // Box size
+  mvhdBox.write("mvhd", mvhdOffset); mvhdOffset += 4; // Box type
+  mvhdBox.writeUInt32BE(0, mvhdOffset); mvhdOffset += 4; // Version and flags
+  mvhdBox.writeUInt32BE(0, mvhdOffset); mvhdOffset += 4; // Creation time
+  mvhdBox.writeUInt32BE(0, mvhdOffset); mvhdOffset += 4; // Modification time
+  mvhdBox.writeUInt32BE(1000, mvhdOffset); mvhdOffset += 4; // Timescale
+  mvhdBox.writeUInt32BE(10000, mvhdOffset); mvhdOffset += 4; // Duration (10 seconds)
+  mvhdBox.writeUInt32BE(0x00010000, mvhdOffset); mvhdOffset += 4; // Playback speed (1.0)
+  mvhdBox.writeUInt16BE(0x0100, mvhdOffset); mvhdOffset += 2; // Volume (1.0)
+  mvhdOffset += 10; // Reserved
+  // Identity matrix
+  mvhdBox.writeUInt32BE(0x00010000, mvhdOffset); mvhdOffset += 4;
+  mvhdBox.writeUInt32BE(0, mvhdOffset); mvhdOffset += 4;
+  mvhdBox.writeUInt32BE(0, mvhdOffset); mvhdOffset += 4;
+  mvhdBox.writeUInt32BE(0, mvhdOffset); mvhdOffset += 4;
+  mvhdBox.writeUInt32BE(0x00010000, mvhdOffset); mvhdOffset += 4;
+  mvhdBox.writeUInt32BE(0, mvhdOffset); mvhdOffset += 4;
+  mvhdBox.writeUInt32BE(0, mvhdOffset); mvhdOffset += 4;
+  mvhdBox.writeUInt32BE(0, mvhdOffset); mvhdOffset += 4;
+  mvhdBox.writeUInt32BE(0x40000000, mvhdOffset); mvhdOffset += 4;
+  mvhdBox.writeUInt32BE(0, mvhdOffset); mvhdOffset += 4; // Preview time
+  mvhdBox.writeUInt32BE(2, mvhdOffset); // Next track ID
 
-  return Buffer.concat([ftypBox, mdatBox]);
+  const moovBox = Buffer.alloc(16 + 108);
+  let moovOffset = 0;
+  moovBox.writeUInt32BE(16 + 108, moovOffset); moovOffset += 4; // Box size
+  moovBox.write("moov", moovOffset); moovOffset += 4; // Box type
+  mvhdBox.copy(moovBox, moovOffset);
+
+  // mdat box - media data with H.264 NAL units
+  const mediaData = Buffer.alloc(1000000); // 1MB
+  let mdatOffset = 0;
+
+  // Write H.264 NAL unit start codes and data
+  for (let i = 0; i < 1000 && mdatOffset < mediaData.length - 4; i++) {
+    mediaData[mdatOffset++] = 0x00;
+    mediaData[mdatOffset++] = 0x00;
+    mediaData[mdatOffset++] = 0x00;
+    mediaData[mdatOffset++] = 0x01;
+    // NAL unit data
+    for (let j = 0; j < 1000 && mdatOffset < mediaData.length; j++) {
+      mediaData[mdatOffset++] = (Math.random() * 256) | 0;
+    }
+  }
+
+  const mdatBox = Buffer.alloc(8 + mdatOffset);
+  mdatBox.writeUInt32BE(8 + mdatOffset, 0); // Box size
+  mdatBox.write("mdat", 4); // Box type
+  mediaData.copy(mdatBox, 8, 0, mdatOffset);
+
+  return Buffer.concat([ftypBox, moovBox, mdatBox]);
 }
 
 // Helper function to create valid Opus file
