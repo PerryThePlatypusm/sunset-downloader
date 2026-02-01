@@ -62,100 +62,30 @@ export const handleDownload: RequestHandler = async (req, res) => {
       });
     }
 
-    // Send URL to FastSaverAPI
-    const fastSaverUrl = "https://api.fastsaverapi.com/download";
-    const token = process.env.FASTSAVER_API_TOKEN;
+    // YouTube downloads using ytdl-core
+    console.log("[Download] Using ytdl-core for YouTube");
 
-    if (!token) {
-      console.error("[Download] FastSaverAPI token not configured");
-      return res.status(500).json({ error: "API token not configured" });
-    }
+    const info = await ytdl.getInfo(url);
+    console.log("[Download] Got video info:", info.videoDetails.title);
 
-    const requestPayload = {
-      url: url,
-      token: token,
-    };
-
-    console.log("[Download] Sending to FastSaverAPI");
-    console.log("[Download] URL being sent:", url);
-
-    const response = await fetch(fastSaverUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(requestPayload),
-      signal: AbortSignal.timeout(60000),
+    const format = ytdl.chooseFormat(info.formats, {
+      quality: audioOnly ? "highestaudio" : "highest",
     });
 
-    console.log("[Download] FastSaverAPI response status:", response.status);
+    console.log("[Download] Downloading:", format.qualityLabel || "audio");
 
-    const responseText = await response.text();
-    console.log(
-      "[Download] FastSaverAPI response (first 300 chars):",
-      responseText.substring(0, 300),
-    );
+    const stream = ytdl.downloadFromInfo(info, { format });
+    const chunks: Buffer[] = [];
 
-    if (!response.ok) {
-      console.error("[Download] FastSaverAPI HTTP error:", response.status);
-      console.error("[Download] FastSaverAPI error response:", responseText);
-
-      // Try to parse error from response
-      try {
-        const errorData = JSON.parse(responseText);
-        if (errorData.error) {
-          return res.status(400).json({ error: errorData.error });
-        }
-      } catch (e) {
-        // Ignore parse errors
-      }
-
-      return res.status(400).json({
-        error: "Download service error",
+    const buffer = await new Promise<Buffer>((resolve, reject) => {
+      stream.on("data", (chunk: Buffer) => {
+        chunks.push(chunk);
       });
-    }
-
-    let data: any;
-    try {
-      data = JSON.parse(responseText);
-    } catch (e) {
-      console.error("[Download] JSON parse error:", e);
-      return res.status(400).json({ error: "Invalid response from service" });
-    }
-
-    console.log(
-      "[Download] Parsed response:",
-      JSON.stringify(data).substring(0, 300),
-    );
-
-    // Check for API errors
-    if (data.error) {
-      console.error("[Download] API error:", data.error);
-      return res.status(400).json({ error: data.error });
-    }
-
-    // Get download URL
-    if (!data.url) {
-      console.error("[Download] No URL in response. Full response:", data);
-      return res.status(400).json({
-        error: "Could not process this content",
+      stream.on("end", () => {
+        resolve(Buffer.concat(chunks));
       });
-    }
-
-    console.log("[Download] Got media URL from FastSaverAPI");
-
-    // Fetch the actual media file
-    const fileResponse = await fetch(data.url, {
-      signal: AbortSignal.timeout(60000),
+      stream.on("error", reject);
     });
-
-    console.log("[Download] Media file response:", fileResponse.status);
-
-    if (!fileResponse.ok) {
-      return res.status(400).json({ error: "Failed to download media file" });
-    }
-
-    const buffer = await fileResponse.arrayBuffer();
 
     if (buffer.byteLength === 0) {
       return res.status(400).json({ error: "No content to download" });
@@ -163,12 +93,12 @@ export const handleDownload: RequestHandler = async (req, res) => {
 
     console.log("[Download] Downloaded:", buffer.byteLength, "bytes");
 
-    // Generate filename
-    let filename = data.filename || `download_${Date.now()}`;
+    // Generate filename from video title
+    const title = info.videoDetails.title
+      .replace(/[^\w\s-]/g, "")
+      .slice(0, 100);
     const ext = audioOnly ? "mp3" : "mp4";
-    if (!filename.includes(`.${ext}`)) {
-      filename = `${filename}.${ext}`;
-    }
+    const filename = `${title}.${ext}`;
 
     console.log("[Download] Success! Filename:", filename);
 
@@ -178,7 +108,7 @@ export const handleDownload: RequestHandler = async (req, res) => {
     res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     res.setHeader("Access-Control-Allow-Origin", "*");
 
-    res.send(Buffer.from(buffer));
+    res.send(buffer);
   } catch (error) {
     console.error("[Download] Exception:", error);
     return res.status(400).json({ error: "Download failed. Please try again." });
