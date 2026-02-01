@@ -124,8 +124,19 @@ export const handleDownload: RequestHandler = async (req, res) => {
       await execAsync(command, { timeout: 120000 });
     } catch (error: any) {
       console.error("yt-dlp error:", error.message);
+
+      // Check if yt-dlp is installed
+      if (error.message.includes("not found") || error.message.includes("ENOENT")) {
+        return res.status(503).json({
+          error: "yt-dlp is not installed on this server",
+          details: "Please install yt-dlp to enable downloads",
+          instruction: "Run: pip install yt-dlp",
+        });
+      }
+
       return res.status(400).json({
         error: "Failed to download. Please check the URL and try again.",
+        details: error.message,
       });
     }
 
