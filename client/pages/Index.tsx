@@ -382,18 +382,18 @@ export default function Index() {
             </Button>
 
             {/* Info Section */}
-            <div className="mt-8 pt-6 border-t border-sunset-700/50 grid grid-cols-3 gap-4 text-center">
+            <div className="mt-8 pt-6 border-t border-sunset-700/50 grid grid-cols-2 sm:grid-cols-3 gap-4 text-center">
               <div>
-                <p className="text-sunset-500 font-bold">25+</p>
-                <p className="text-sunset-400 text-sm">Supported Sites</p>
+                <p className="text-sunset-500 font-bold text-lg sm:text-xl">1000+</p>
+                <p className="text-sunset-400 text-xs sm:text-sm">Supported Platforms</p>
               </div>
               <div>
-                <p className="text-sunset-500 font-bold">8K</p>
-                <p className="text-sunset-400 text-sm">Max Quality</p>
+                <p className="text-sunset-500 font-bold text-lg sm:text-xl">4K</p>
+                <p className="text-sunset-400 text-xs sm:text-sm">Max Quality</p>
               </div>
-              <div>
-                <p className="text-sunset-500 font-bold">Free</p>
-                <p className="text-sunset-400 text-sm">No Account Needed</p>
+              <div className="col-span-2 sm:col-span-1">
+                <p className="text-sunset-500 font-bold text-lg sm:text-xl">Free</p>
+                <p className="text-sunset-400 text-xs sm:text-sm">No Account</p>
               </div>
             </div>
           </div>
