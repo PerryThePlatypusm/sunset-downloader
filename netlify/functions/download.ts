@@ -107,14 +107,14 @@ async function downloadViaFastSaver(
       signal: AbortSignal.timeout(60000),
     });
 
-    console.log(`[Cobalt] File response status: ${fileResponse.status}`);
+    console.log(`[FastSaver] File response status: ${fileResponse.status}`);
 
     if (!fileResponse.ok) {
       throw new Error(`File fetch failed: ${fileResponse.status}`);
     }
 
     const buffer = await fileResponse.arrayBuffer();
-    console.log(`[Cobalt] Downloaded: ${buffer.byteLength} bytes`);
+    console.log(`[FastSaver] Downloaded: ${buffer.byteLength} bytes`);
 
     if (buffer.byteLength === 0) {
       throw new Error("Empty file");
@@ -132,7 +132,7 @@ async function downloadViaFastSaver(
       filename,
     };
   } catch (error) {
-    console.error(`[Cobalt] Error:`, error);
+    console.error(`[FastSaver] Error:`, error);
     throw error;
   }
 }
