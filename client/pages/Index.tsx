@@ -203,7 +203,7 @@ export default function Index() {
         {/* Main Content */}
         <main className="w-full max-w-4xl mx-auto px-3 sm:px-4 py-6 sm:py-12">
           {/* Hero Section */}
-          <div className="text-center mb-12">
+          <div className="text-center mb-6 sm:mb-12">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4">
               <span className="bg-gradient-to-r from-sunset-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">
                 Sunset Downloader
