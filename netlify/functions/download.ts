@@ -58,7 +58,10 @@ async function downloadViaCobalt(
     console.log(`[Cobalt] Response status: ${response.status}`);
 
     const responseText = await response.text();
-    console.log(`[Cobalt] Response (first 500 chars):`, responseText.substring(0, 500));
+    console.log(
+      `[Cobalt] Response (first 500 chars):`,
+      responseText.substring(0, 500),
+    );
 
     if (!response.ok) {
       console.error(`[Cobalt] HTTP ${response.status} Error`);
@@ -75,7 +78,10 @@ async function downloadViaCobalt(
       throw new Error("Invalid API response");
     }
 
-    console.log(`[Cobalt] Parsed data:`, JSON.stringify(data).substring(0, 300));
+    console.log(
+      `[Cobalt] Parsed data:`,
+      JSON.stringify(data).substring(0, 300),
+    );
 
     // Check for errors
     if (data.status === "error" || data.error) {
@@ -86,7 +92,10 @@ async function downloadViaCobalt(
 
     // Get download URL
     if (!data.url) {
-      console.error(`[Cobalt] Missing URL in response. Data:`, JSON.stringify(data));
+      console.error(
+        `[Cobalt] Missing URL in response. Data:`,
+        JSON.stringify(data),
+      );
       throw new Error("No download URL returned");
     }
 
@@ -193,7 +202,7 @@ export async function handler(event: any) {
     // Download
     const { buffer, filename } = await downloadViaCobalt(
       normalizedUrl,
-      audioOnly || false
+      audioOnly || false,
     );
 
     const base64 = buffer.toString("base64");
