@@ -128,29 +128,54 @@ export const handleDownload: RequestHandler = async (req, res) => {
 
     command += ` -o "${outputTemplate}"`;
     command += ` "${normalizedUrl}"`;
-    command += ` --quiet`;
+    command += ` --quiet --no-warnings`;
 
-    // Execute download
+    console.log(`Starting download: ${detectedPlatform} (${audioOnly ? "audio" : "video"})`);
+    console.log(`Command: ${command.substring(0, 100)}...`);
+
+    // Execute download with better error handling
+    let downloadError: string | null = null;
     try {
-      await execAsync(command, { timeout: 120000 });
+      const { stdout, stderr } = await execAsync(command, {
+        timeout: 120000,
+        maxBuffer: 1024 * 1024 * 10, // 10MB buffer
+      });
+      if (stderr) {
+        console.warn("yt-dlp warnings:", stderr);
+      }
     } catch (error: any) {
-      console.error("yt-dlp error:", error.message);
+      console.error("yt-dlp error:", error);
+      downloadError = error.message || String(error);
 
       // Check if yt-dlp is installed
       if (
-        error.message.includes("not found") ||
-        error.message.includes("ENOENT")
+        downloadError.includes("not found") ||
+        downloadError.includes("ENOENT") ||
+        downloadError.includes("command not found")
       ) {
         return res.status(503).json({
           error: "yt-dlp is not installed on this server",
-          details: "Please install yt-dlp to enable downloads",
-          instruction: "Run: pip install yt-dlp",
+          details: "yt-dlp binary not found in system PATH",
+          instruction: "Run: pip install yt-dlp (then ensure it's in your PATH)",
+          platform: process.platform,
+        });
+      }
+
+      // Network or URL-related errors
+      if (
+        downloadError.includes("404") ||
+        downloadError.includes("unavailable") ||
+        downloadError.includes("private")
+      ) {
+        return res.status(400).json({
+          error: "The video/audio is not available or the URL is invalid",
+          details: downloadError,
         });
       }
 
       return res.status(400).json({
         error: "Failed to download. Please check the URL and try again.",
-        details: error.message,
+        details: downloadError,
       });
     }
 
