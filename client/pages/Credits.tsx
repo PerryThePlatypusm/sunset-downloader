@@ -190,6 +190,46 @@ export default function Credits() {
                   <ExternalLink className="w-4 h-4 text-sunset-400" />
                 </a>
               </div>
+
+              {/* Media & Encoding */}
+              <div className="space-y-3">
+                <h4 className="text-sunset-200 font-semibold mb-3">
+                  Media & Encoding
+                </h4>
+                <a
+                  href="https://ffmpeg.org"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between p-3 bg-sunset-900/30 hover:bg-sunset-900/50 rounded-lg border border-sunset-700/50 transition-colors group"
+                >
+                  <span className="text-sunset-300 group-hover:text-sunset-100">
+                    FFmpeg
+                  </span>
+                  <ExternalLink className="w-4 h-4 text-sunset-400" />
+                </a>
+                <a
+                  href="https://www.npmjs.com/package/ffmpeg-static"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between p-3 bg-sunset-900/30 hover:bg-sunset-900/50 rounded-lg border border-sunset-700/50 transition-colors group"
+                >
+                  <span className="text-sunset-300 group-hover:text-sunset-100">
+                    ffmpeg-static
+                  </span>
+                  <ExternalLink className="w-4 h-4 text-sunset-400" />
+                </a>
+                <a
+                  href="https://www.npmjs.com/package/wav"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between p-3 bg-sunset-900/30 hover:bg-sunset-900/50 rounded-lg border border-sunset-700/50 transition-colors group"
+                >
+                  <span className="text-sunset-300 group-hover:text-sunset-100">
+                    WAV Library
+                  </span>
+                  <ExternalLink className="w-4 h-4 text-sunset-400" />
+                </a>
+              </div>
             </div>
           </div>
 
