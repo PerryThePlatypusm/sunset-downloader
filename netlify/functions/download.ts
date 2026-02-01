@@ -58,86 +58,66 @@ function createValidWAV(): Buffer {
   const bitsPerSample = 16;
   const duration = 3; // 3 seconds
   const numSamples = sampleRate * duration;
-  const audioSize = numSamples * channels * (bitsPerSample / 8);
+  const bytesPerSample = bitsPerSample / 8;
+  const audioDataSize = numSamples * channels * bytesPerSample;
 
-  // Create a buffer large enough for header + audio data
-  const buffer = Buffer.alloc(audioSize + 100);
+  // WAV header is 44 bytes
+  const wavHeader = Buffer.alloc(44);
+  let pos = 0;
 
-  // Manually build WAV header for maximum compatibility
-  let offset = 0;
-
-  // "RIFF" chunk descriptor
-  buffer.write("RIFF", offset);
-  offset += 4;
-
-  // File size - 8 bytes (will be 36 + audioDataLength)
-  const audioDataLength = numSamples * channels * (bitsPerSample / 8);
-  buffer.writeUInt32LE(36 + audioDataLength, offset);
-  offset += 4;
+  // "RIFF" chunk
+  wavHeader.write("RIFF", pos);
+  pos += 4;
+  wavHeader.writeUInt32LE(36 + audioDataSize, pos); // File size - 8
+  pos += 4;
 
   // "WAVE" format
-  buffer.write("WAVE", offset);
-  offset += 4;
+  wavHeader.write("WAVE", pos);
+  pos += 4;
 
   // "fmt " subchunk
-  buffer.write("fmt ", offset);
-  offset += 4;
-
-  // Subchunk1 size (16 for PCM)
-  buffer.writeUInt32LE(16, offset);
-  offset += 4;
-
-  // Audio format (1 = PCM)
-  buffer.writeUInt16LE(1, offset);
-  offset += 2;
-
-  // Number of channels
-  buffer.writeUInt16LE(channels, offset);
-  offset += 2;
-
-  // Sample rate
-  buffer.writeUInt32LE(sampleRate, offset);
-  offset += 4;
-
-  // Byte rate
-  buffer.writeUInt32LE(sampleRate * channels * (bitsPerSample / 8), offset);
-  offset += 4;
-
-  // Block align
-  buffer.writeUInt16LE(channels * (bitsPerSample / 8), offset);
-  offset += 2;
-
-  // Bits per sample
-  buffer.writeUInt16LE(bitsPerSample, offset);
-  offset += 2;
+  wavHeader.write("fmt ", pos);
+  pos += 4;
+  wavHeader.writeUInt32LE(16, pos); // Subchunk1 size
+  pos += 4;
+  wavHeader.writeUInt16LE(1, pos); // Audio format (PCM = 1)
+  pos += 2;
+  wavHeader.writeUInt16LE(channels, pos); // Channels
+  pos += 2;
+  wavHeader.writeUInt32LE(sampleRate, pos); // Sample rate
+  pos += 4;
+  wavHeader.writeUInt32LE(sampleRate * channels * bytesPerSample, pos); // Byte rate
+  pos += 4;
+  wavHeader.writeUInt16LE(channels * bytesPerSample, pos); // Block align
+  pos += 2;
+  wavHeader.writeUInt16LE(bitsPerSample, pos); // Bits per sample
+  pos += 2;
 
   // "data" subchunk
-  buffer.write("data", offset);
-  offset += 4;
+  wavHeader.write("data", pos);
+  pos += 4;
+  wavHeader.writeUInt32LE(audioDataSize, pos); // Subchunk2 size
 
-  // Subchunk2 size
-  buffer.writeUInt32LE(audioDataLength, offset);
-  offset += 4;
+  // Generate audio data buffer (PCM samples)
+  const audioData = Buffer.alloc(audioDataSize);
+  const frequency = 440; // 440Hz sine wave
+  const volume = 0.3; // 30% volume
 
-  // Generate PCM audio data (sine wave at 440Hz)
-  const frequency = 440;
-  const volume = 0.3; // 30% volume to avoid clipping
-  let audioOffset = offset;
-
+  let audioPos = 0;
   for (let i = 0; i < numSamples; i++) {
-    // Calculate sine wave sample
     const sample =
       Math.sin((2 * Math.PI * frequency * i) / sampleRate) * 32767 * volume;
     const int16 = Math.round(Math.max(-32768, Math.min(32767, sample)));
 
-    // Write same sample to both channels
-    buffer.writeInt16LE(int16, audioOffset);
-    audioOffset += 2;
-    buffer.writeInt16LE(int16, audioOffset);
-    audioOffset += 2;
+    // Write to both channels
+    audioData.writeInt16LE(int16, audioPos);
+    audioPos += 2;
+    audioData.writeInt16LE(int16, audioPos);
+    audioPos += 2;
   }
 
-  return buffer.slice(0, audioOffset);
+  // Combine header and audio data
+  return Buffer.concat([wavHeader, audioData]);
 }
 
 // Helper function to create valid FLAC file (fallback to WAV for compatibility)
