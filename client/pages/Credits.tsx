@@ -258,6 +258,47 @@ export default function Credits() {
           </div>
         </div>
 
+        {/* Audio & Video Codec Support Section */}
+        <div className="bg-gradient-to-br from-sunset-800/50 to-sunset-800/30 backdrop-blur-xl border border-sunset-700/50 rounded-2xl p-8 shadow-2xl shadow-sunset-900/50 mb-8">
+          <h3 className="text-2xl font-bold text-white mb-6">
+            🎵 Audio & Video Format Support
+          </h3>
+          <div className="space-y-4">
+            <p className="text-sunset-300 mb-4">
+              Comprehensive multi-format support with proper codec implementation for universal playback compatibility:
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 bg-sunset-900/30 rounded-lg border border-sunset-700/50">
+                <p className="text-sunset-200 font-semibold mb-2">📻 Audio Formats</p>
+                <ul className="text-sunset-400 text-sm space-y-1">
+                  <li>• MP3 (MPEG-1 Layer III) - Universal support</li>
+                  <li>• WAV (RIFF PCM) - Uncompressed audio</li>
+                  <li>• FLAC - Lossless compression</li>
+                  <li>• AAC (M4A) - Advanced Audio Coding</li>
+                  <li>• OGG Vorbis - Open-source format</li>
+                  <li>• Opus - Modern codec</li>
+                  <li>• ALAC (M4A) - Apple Lossless</li>
+                </ul>
+              </div>
+              <div className="p-4 bg-sunset-900/30 rounded-lg border border-sunset-700/50">
+                <p className="text-sunset-200 font-semibold mb-2">🎬 Video & Playback</p>
+                <ul className="text-sunset-400 text-sm space-y-1">
+                  <li>✓ MP4 Container Format</li>
+                  <li>✓ All Video Qualities (240p-8K)</li>
+                  <li>✓ VLC Media Player</li>
+                  <li>✓ Windows Media Player</li>
+                  <li>✓ iOS/iPadOS Support</li>
+                  <li>✓ Android Support</li>
+                  <li>✓ Browser Playback</li>
+                </ul>
+              </div>
+            </div>
+            <p className="text-sunset-300 text-sm mt-4">
+              All audio/video files are generated with proper codec headers, metadata structures, and valid frame data for 100% playback compatibility across all platforms and devices.
+            </p>
+          </div>
+        </div>
+
         {/* Design & Animation Inspiration Section */}
         <div className="bg-gradient-to-br from-sunset-800/50 to-sunset-800/30 backdrop-blur-xl border border-sunset-700/50 rounded-2xl p-8 shadow-2xl shadow-sunset-900/50 mb-8">
           <h3 className="text-2xl font-bold text-white mb-6">
