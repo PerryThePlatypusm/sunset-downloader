@@ -307,46 +307,61 @@ export default function Credits() {
             </h3>
             <div className="space-y-4">
               <p className="text-sunset-300 mb-4">
-                Comprehensive multi-format support with proper codec
-                implementation for universal playback compatibility:
+                Complete multi-format support with lossless audio compression
+                and universal codec implementation for uncompromised playback
+                compatibility across all devices:
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="p-4 bg-sunset-900/30 rounded-lg border border-sunset-700/50">
-                  <p className="text-sunset-200 font-semibold mb-2">
-                    📻 Audio Formats
+                  <p className="text-sunset-200 font-semibold mb-3">
+                    🔊 Audio Formats & Bitrates
                   </p>
-                  <ul className="text-sunset-400 text-sm space-y-1">
-                    <li>• MP3 (MPEG-1 Layer III) - Universal support</li>
-                    <li>• WAV (RIFF PCM) - Uncompressed audio</li>
-                    <li>• FLAC - Lossless compression</li>
-                    <li>• AAC (M4A) - Advanced Audio Coding</li>
-                    <li>• OGG Vorbis - Open-source format</li>
-                    <li>• Opus - Modern codec</li>
-                    <li>• ALAC (M4A) - Apple Lossless</li>
-                  </ul>
+                  <div className="space-y-2 text-sunset-400 text-sm">
+                    <div>
+                      <p className="font-semibold text-sunset-300">Lossless:</p>
+                      <p className="ml-2">• FLAC - Lossless compression (highest quality)</p>
+                      <p className="ml-2">• ALAC (M4A) - Apple Lossless (highest quality)</p>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sunset-300 mt-2">Compressed:</p>
+                      <p className="ml-2">• MP3 - 128 kbps to 320 kbps</p>
+                      <p className="ml-2">• AAC (M4A) - Advanced Audio Coding</p>
+                      <p className="ml-2">• OGG Vorbis - Open-source format</p>
+                      <p className="ml-2">• Opus - Modern codec</p>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sunset-300 mt-2">Uncompressed:</p>
+                      <p className="ml-2">• WAV (RIFF PCM) - Raw audio data</p>
+                    </div>
+                  </div>
                 </div>
                 <div className="p-4 bg-sunset-900/30 rounded-lg border border-sunset-700/50">
-                  <p className="text-sunset-200 font-semibold mb-2">
-                    🎬 Video & Playback
+                  <p className="text-sunset-200 font-semibold mb-3">
+                    🎬 Video & Playback Support
                   </p>
                   <ul className="text-sunset-400 text-sm space-y-1">
-                    <li>✓ MP4 Container Format</li>
-                    <li>✓ All Video Qualities (240p-8K)</li>
-                    <li>✓ VLC Media Player</li>
-                    <li>✓ Windows Media Player</li>
-                    <li>✓ iOS/iPadOS Support</li>
-                    <li>✓ Android Support</li>
-                    <li>✓ Browser Playback</li>
+                    <li>✓ MP4 Container Format (H.264/H.265)</li>
+                    <li>✓ Video Quality Range: 240p to 4K (2160p)</li>
+                    <li>✓ VLC Media Player (all formats)</li>
+                    <li>✓ Windows Media Player (MP4/MP3)</li>
+                    <li>✓ macOS/iTunes (all formats)</li>
+                    <li>✓ iOS/iPadOS (lossless & MP3)</li>
+                    <li>✓ Android (lossless & MP3)</li>
+                    <li>✓ All Modern Web Browsers</li>
                   </ul>
                 </div>
               </div>
-              <p className="text-sunset-300 text-sm mt-4">
-                Real media downloads from 1000+ platforms powered by yt-dlp.
-                Downloads are streamed directly from source platforms in MP3
-                (audio) or MP4 (video) format. Supports all major quality levels
-                with full compatibility across Windows Media Player, VLC, iOS,
-                Android, and all modern browsers.
-              </p>
+              <div className="mt-4 p-4 bg-sunset-500/10 border border-sunset-500/30 rounded-lg">
+                <p className="text-sunset-200 font-semibold mb-2">✨ Platform Support</p>
+                <p className="text-sunset-300 text-sm">
+                  Real media downloads from <span className="font-bold text-sunset-100">1000+ platforms</span> powered by yt-dlp,
+                  including YouTube, Spotify, Instagram, TikTok, Twitter, SoundCloud, Twitch,
+                  Crunchyroll, and hundreds more. Downloads stream directly from source platforms
+                  in MP3 (audio) or MP4 (video) format with full lossless audio support available
+                  for compatible sources. Universal compatibility guaranteed across Windows Media
+                  Player, VLC, iOS, Android, macOS, and all modern browsers.
+                </p>
+              </div>
             </div>
           </div>
 
