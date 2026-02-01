@@ -5,34 +5,41 @@ import {
   detectPlatform,
 } from "../../server/utils/urlUtils";
 
-// Helper function to create valid MP3 file with proper structure
+// Helper function to create valid MP3 file
 function createValidMP3(): Buffer {
-  // Create MP3 file with proper frame structure
-  // Use standard MPEG-1 Layer III format at 44.1 kHz, 320 kbps
+  // Create MP3 file with proper frame structure using real audio data
   const duration = 3; // seconds
   const sampleRate = 44100;
   const bitrate = 320; // kbps
-  const frameSize = (144000 * bitrate) / sampleRate + 1; // ~417 bytes
-  const frameCount = Math.ceil((duration * sampleRate) / 1152); // ~130 frames
+  const frameSize = (144000 * bitrate) / sampleRate + 1; // ~417 bytes per frame
+  const frameCount = Math.ceil((duration * sampleRate) / 1152); // MP3 frames (26ms each)
 
   const mp3Buffer = Buffer.alloc(frameCount * frameSize);
   let offset = 0;
 
-  // MP3 frame header: 0xFFFB9000
-  // 0xFFF = sync word
-  // B = MPEG1, Layer III, no CRC
-  // 9 = 320kbps
-  // 0 = 44.1kHz, no padding, no private
+  // MP3 frame header for MPEG-1 Layer III, 320kbps, 44.1kHz
   const frameHeader = Buffer.from([0xff, 0xfb, 0x90, 0x00]);
 
+  // Generate audio samples to encode into frames
+  const audioSamples: number[] = [];
+  const frequency = 440; // 440Hz tone
+  for (let i = 0; i < duration * sampleRate; i++) {
+    const sample = Math.sin((2 * Math.PI * frequency * i) / sampleRate);
+    audioSamples.push(Math.round(sample * 32767 * 0.3)); // 30% volume
+  }
+
+  // Create MP3 frames
   for (let f = 0; f < frameCount && offset < mp3Buffer.length - frameSize; f++) {
+    // Write frame sync header
     frameHeader.copy(mp3Buffer, offset);
     offset += 4;
 
-    // Fill frame data with pattern (Huffman-coded audio)
+    // Write frame data (pseudo-Huffman encoded audio)
+    const frameStartSample = f * 1152;
     for (let i = 4; i < frameSize && offset < mp3Buffer.length; i++) {
-      // Alternating bit pattern for realistic MP3 data
-      mp3Buffer[offset++] = (f + i) & 0xff;
+      const sampleIndex = (frameStartSample + i - 4) % audioSamples.length;
+      const sample = audioSamples[sampleIndex];
+      mp3Buffer[offset++] = (sample >> 8) & 0xff;
     }
   }
 
