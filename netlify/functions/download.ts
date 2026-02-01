@@ -8,10 +8,16 @@ import {
 // Helper function to create ID3v2 tag for MP3
 function createID3v2Tag(): Buffer {
   const header = Buffer.from([
-    0x49, 0x44, 0x33, // "ID3"
-    0x04, 0x00, // Version 2.4.0
+    0x49,
+    0x44,
+    0x33, // "ID3"
+    0x04,
+    0x00, // Version 2.4.0
     0x00, // Flags
-    0x00, 0x00, 0x00, 0x00, // Tag size (will be small)
+    0x00,
+    0x00,
+    0x00,
+    0x00, // Tag size (will be small)
   ]);
   return header;
 }
@@ -20,7 +26,8 @@ function createID3v2Tag(): Buffer {
 function createMP3Frame(): Buffer {
   // MPEG-1 Layer III, 320 kbps, 44.1 kHz
   return Buffer.from([
-    0xff, 0xfb, // Frame sync
+    0xff,
+    0xfb, // Frame sync
     0x90, // MPEG1 Layer3 320kbps
     0x00, // Sample rate 44.1kHz
   ]);
@@ -232,15 +239,43 @@ const handler: Handler = async (event) => {
           // STREAMINFO metadata block
           const flacMetadata = Buffer.from([
             0x80, // Last metadata block flag + block type (0 = STREAMINFO)
-            0x00, 0x00, 0x22, // Metadata block size (34 bytes)
-            0x00, 0x00, 0x00, 0x10, // Min block size
-            0x00, 0x00, 0x00, 0x10, // Max block size
-            0x00, 0x00, 0x00, 0x00, // Min frame size
-            0x00, 0x00, 0x00, 0x00, // Max frame size
-            0xac, 0x44, 0x00, // Sample rate (44100 Hz)
+            0x00,
+            0x00,
+            0x22, // Metadata block size (34 bytes)
+            0x00,
+            0x00,
+            0x00,
+            0x10, // Min block size
+            0x00,
+            0x00,
+            0x00,
+            0x10, // Max block size
+            0x00,
+            0x00,
+            0x00,
+            0x00, // Min frame size
+            0x00,
+            0x00,
+            0x00,
+            0x00, // Max frame size
+            0xac,
+            0x44,
+            0x00, // Sample rate (44100 Hz)
             0x03, // Channels (2) + bits per sample
-            0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Total samples
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // MD5
+            0x80,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00, // Total samples
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00, // MD5
           ]);
           mockContent = Buffer.concat([
             flacSignature,
@@ -252,17 +287,15 @@ const handler: Handler = async (event) => {
         case "aac":
           // AAC with proper ADTS frames
           const adtsHeader = Buffer.from([
-            0xff, 0xf1, // ADTS sync
+            0xff,
+            0xf1, // ADTS sync
             0x50, // Profile, sample rate, private bit
             0x80, // Channel config + frame length info
             0x1f, // Frame length
             0xfc, // Buffer fullness
             0x00, // Raw data blocks
           ]);
-          mockContent = Buffer.concat([
-            adtsHeader,
-            Buffer.alloc(20480, 0x00),
-          ]);
+          mockContent = Buffer.concat([adtsHeader, Buffer.alloc(20480, 0x00)]);
           mimeType = "audio/mp4";
           break;
         case "alac":
@@ -331,7 +364,9 @@ const handler: Handler = async (event) => {
             Buffer.from("OggS"),
             Buffer.alloc(25, 0x00),
             Buffer.from("OpusHead"),
-            Buffer.from([0x01, 0x02, 0x38, 0x01, 0x80, 0xbb, 0x00, 0x00, 0x00, 0x00, 0x00]),
+            Buffer.from([
+              0x01, 0x02, 0x38, 0x01, 0x80, 0xbb, 0x00, 0x00, 0x00, 0x00, 0x00,
+            ]),
             Buffer.alloc(20480, 0x00),
           ]);
           mockContent = opusOggHeader;
