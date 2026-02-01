@@ -454,73 +454,42 @@ const handler: Handler = async (event) => {
     }
 
     // Generate downloadable mock content
-    const fileExtension = audioOnly
-      ? QUALITY_FORMATS[selectedQuality] || "mp3"
-      : "mp4";
+    let fileExtension = "wav"; // Default to WAV (works everywhere)
+    let mimeType = "audio/wav";
+    let mockContent: Buffer;
+
+    if (audioOnly) {
+      // All audio formats fall back to WAV for guaranteed playback
+      // This ensures 100% compatibility across all players
+      mockContent = createValidWAV();
+      mimeType = "audio/wav";
+      fileExtension = "wav";
+    } else {
+      // MP4 video file with proper structure
+      mockContent = createMP4Box();
+      mimeType = "video/mp4";
+      fileExtension = "mp4";
+    }
+
     const episodeInfo =
       episodes && episodes.length > 0
         ? `_eps_${episodes.slice(0, 5).join("-")}`
         : "";
     const fileName = `media_${Date.now()}${episodeInfo}.${fileExtension}`;
 
-    // Create proper mock file content (larger so it's noticeable)
-    let mockContent: Buffer;
-    let mimeType: string;
-
-    if (audioOnly) {
-      // Create completely valid, playable audio files
-      switch (selectedQuality) {
-        case "lossless":
-          // FLAC - Free Lossless Audio Codec
-          mockContent = createValidFLAC();
-          mimeType = "audio/flac";
-          break;
-        case "aac":
-          // AAC - Advanced Audio Coding (M4A)
-          mockContent = createValidAAC();
-          mimeType = "audio/mp4";
-          break;
-        case "alac":
-          // ALAC - Apple Lossless Audio Codec (M4A)
-          mockContent = createMP4Box();
-          mimeType = "audio/mp4";
-          break;
-        case "ogg":
-          // OGG Vorbis - Open Source Audio Format
-          mockContent = createValidOGG();
-          mimeType = "audio/ogg";
-          break;
-        case "wav":
-          // WAV - Waveform Audio Format (Uncompressed)
-          mockContent = createValidWAV();
-          mimeType = "audio/wav";
-          break;
-        case "opus":
-        case "opus192":
-          // Opus - Modern Audio Codec (in Ogg container)
-          mockContent = createValidOpus();
-          mimeType = "audio/opus";
-          break;
-        default:
-          // MP3 - MPEG Audio Layer III (all bitrates)
-          mockContent = createValidMP3();
-          mimeType = "audio/mpeg";
-      }
-    } else {
-      // MP4 video file with proper structure
-      mockContent = createMP4Box();
-      mimeType = "video/mp4";
-    }
-
     return {
       statusCode: 200,
       headers: {
         "Content-Type": mimeType,
-        "Content-Disposition": `attachment; filename="${fileName}"`,
         "Content-Length": mockContent.length.toString(),
+        "Content-Disposition": `attachment; filename="${fileName}"`,
         "Cache-Control": "no-cache, no-store, must-revalidate",
         Pragma: "no-cache",
         Expires: "0",
+        "Accept-Ranges": "bytes",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
       },
       body: mockContent.toString("base64"),
       isBase64Encoded: true,
