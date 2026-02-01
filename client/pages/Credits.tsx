@@ -383,7 +383,7 @@ export default function Credits() {
                 <p className="text-sunset-300 font-semibold group-hover:text-sunset-100">
                   Browser APIs
                 </p>
-                <p className="text-sunset-500 text-xs">Web Audio, Canvas, and modern standards</p>
+                <p className="text-sunset-500 text-xs">Canvas and modern web standards</p>
               </div>
               <ExternalLink className="w-4 h-4 text-sunset-400" />
             </a>
