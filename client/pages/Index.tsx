@@ -176,23 +176,23 @@ export default function Index() {
       <TOSNotification />
       <div className="relative z-10">
         {/* Header */}
-        <header className="border-b border-sunset-700/50 backdrop-blur-md bg-sunset-900/50">
-          <div className="max-w-6xl mx-auto px-4 py-6">
+        <header className="border-b border-sunset-700/50 backdrop-blur-md bg-sunset-900/50 sticky top-0 z-20">
+          <div className="max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-sunset-500 to-pink-500 rounded-lg flex items-center justify-center shadow-lg shadow-sunset-500/50">
-                  <Download className="w-6 h-6 text-white" />
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-8 sm:w-10 h-8 sm:h-10 bg-gradient-to-br from-sunset-500 to-pink-500 rounded-lg flex items-center justify-center shadow-lg shadow-sunset-500/50">
+                  <Download className="w-5 sm:w-6 h-5 sm:h-6 text-white" />
                 </div>
-                <div>
-                  <h1 className="text-2xl font-bold bg-gradient-to-r from-sunset-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">
+                <div className="min-w-0">
+                  <h1 className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-sunset-400 via-pink-400 to-orange-400 bg-clip-text text-transparent truncate">
                     SunsetDownloader
                   </h1>
-                  <p className="text-sunset-300 text-xs">
+                  <p className="text-sunset-300 text-xs hidden sm:block">
                     Multi-Platform Media Downloader
                   </p>
                 </div>
               </div>
-              <div className="hidden sm:flex items-center gap-2 text-sunset-300 text-sm">
+              <div className="hidden sm:flex items-center gap-2 text-sunset-300 text-sm whitespace-nowrap">
                 <Zap className="w-4 h-4" />
                 <span>Instant Downloads</span>
               </div>
