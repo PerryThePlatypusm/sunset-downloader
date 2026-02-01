@@ -216,7 +216,7 @@ export default function Index() {
           </div>
 
           {/* Download Card */}
-          <div className="bg-gradient-to-br from-sunset-800/50 to-sunset-800/30 backdrop-blur-xl border border-sunset-700/50 rounded-2xl p-8 shadow-2xl shadow-sunset-900/50">
+          <div className="bg-gradient-to-br from-sunset-800/50 to-sunset-800/30 backdrop-blur-xl border border-sunset-700/50 rounded-2xl p-4 sm:p-6 md:p-8 shadow-2xl shadow-sunset-900/50">
             {/* URL Input */}
             <div className="mb-6">
               <label className="block text-sunset-200 font-semibold mb-2">
