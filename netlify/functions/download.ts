@@ -165,28 +165,10 @@ export async function handler(event: any) {
       };
     }
 
-    // Normalize URL
-    let normalizedUrl: string;
-    try {
-      normalizedUrl = normalizeUrl(url);
-    } catch (e) {
-      console.error("[Handler] Normalization error:", e);
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "Invalid URL" }),
-      };
-    }
+    const trimmedUrl = url.trim();
 
-    // Validate URL
-    if (!isValidUrl(normalizedUrl)) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "URL is not valid" }),
-      };
-    }
-
-    // Detect platform
-    let detectedPlatform = platform || detectPlatform(normalizedUrl);
+    // Detect platform using RAW URL (no normalization for Cobalt)
+    let detectedPlatform = platform || detectPlatform(trimmedUrl);
     console.log("[Handler] Detected platform:", detectedPlatform);
 
     if (!detectedPlatform || !SUPPORTED_PLATFORMS.includes(detectedPlatform)) {
@@ -200,9 +182,9 @@ export async function handler(event: any) {
 
     console.log("[Handler] Starting download...");
 
-    // Download
+    // Download using RAW URL without normalization
     const { buffer, filename } = await downloadViaCobalt(
-      normalizedUrl,
+      trimmedUrl,
       audioOnly || false,
     );
 
