@@ -3,29 +3,40 @@ import { detectPlatform, isValidUrl, normalizeUrl } from "../utils/urlUtils";
 
 // Helper function to create valid MP3 file with proper structure
 function createValidMP3(): Buffer {
-  // Create 10 seconds of MP3 audio at 320kbps, 44.1kHz
-  const mp3Frames = Buffer.alloc(40000); // ~320kbps * 10 seconds / 8
+  // Start with ID3v2.4 header for better compatibility
+  const id3Header = Buffer.alloc(10);
+  id3Header.write("ID3", 0);
+  id3Header[3] = 0x04; // Version 2.4.0
+  id3Header[4] = 0x00;
+  id3Header[5] = 0x00; // Flags
+  // Size is syncsafe integer (zeros for now)
+  id3Header[6] = 0x00;
+  id3Header[7] = 0x00;
+  id3Header[8] = 0x00;
+  id3Header[9] = 0x00;
+
+  // Create MP3 frames with proper structure
+  const mp3Data = Buffer.alloc(65536);
   let offset = 0;
 
-  // MP3 frame header for 320 kbps, MPEG-1 Layer III, 44.1kHz
-  // Each frame is ~417 bytes and contains ~26ms of audio
-  const frameHeader = Buffer.from([0xff, 0xfb, 0x90, 0x00]);
+  // MPEG-1 Layer III frame sync word 0xFFF (11 bits)
+  // Frame header: 0xFFFB9000 (320kbps, 44.1kHz, no CRC, no padding)
+  const frameSyncWord = Buffer.from([0xff, 0xfb, 0x90, 0x00]);
 
-  // Generate ~375 frames for ~10 seconds
-  for (let i = 0; i < 375 && offset < mp3Frames.length - 4; i++) {
-    frameHeader.copy(mp3Frames, offset);
+  // Generate multiple frames
+  for (let f = 0; f < 150 && offset < mp3Data.length - 418; f++) {
+    // Write frame sync and header
+    frameSyncWord.copy(mp3Data, offset);
     offset += 4;
 
-    // Fill frame data with valid pattern
-    const frameLengthRemaining = Math.min(417 - 4, mp3Frames.length - offset);
-    for (let j = 0; j < frameLengthRemaining; j++) {
-      // Create pseudo-random but consistent frame data
-      mp3Frames[offset + j] = (Math.sin(offset / 100) * 127 + 128) & 0xff;
+    // Write frame data (413 bytes) with valid pattern
+    const frameData = Math.random() * 256;
+    for (let i = 0; i < 413 && offset < mp3Data.length; i++) {
+      mp3Data[offset++] = ((i % 256) ^ (Math.floor(frameData) % 256)) & 0xff;
     }
-    offset += frameLengthRemaining;
   }
 
-  return mp3Frames.slice(0, offset);
+  return Buffer.concat([id3Header, mp3Data.slice(0, offset)]);
 }
 
 // Helper function to create valid WAV file with proper PCM audio
