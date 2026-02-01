@@ -97,7 +97,9 @@ export async function handler(event: any) {
         return {
           statusCode: response.status,
           body: JSON.stringify(
-            errorData || { error: `Download service returned ${response.status}` }
+            errorData || {
+              error: `Download service returned ${response.status}`,
+            },
           ),
         };
       }
@@ -107,8 +109,10 @@ export async function handler(event: any) {
       const base64 = Buffer.from(buffer).toString("base64");
 
       // Get headers from backend response
-      const contentType = response.headers.get("content-type") || "application/octet-stream";
-      const contentDisposition = response.headers.get("content-disposition") || "";
+      const contentType =
+        response.headers.get("content-type") || "application/octet-stream";
+      const contentDisposition =
+        response.headers.get("content-disposition") || "";
 
       return {
         statusCode: 200,
