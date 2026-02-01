@@ -39,79 +39,80 @@ function createValidMP3(): Buffer {
   return mp3Buffer.slice(0, offset);
 }
 
-// Helper function to create valid WAV file with proper PCM audio
+// Helper function to create valid WAV file with real PCM audio
 function createValidWAV(): Buffer {
-  // Create proper WAV file structure manually for maximum compatibility
+  // Create proper WAV file with actual audio
   const sampleRate = 44100;
   const channels = 2;
   const bitsPerSample = 16;
   const duration = 3; // 3 seconds
-  const bytesPerSample = bitsPerSample / 8;
   const numSamples = sampleRate * duration;
-  const audioDataLength = numSamples * channels * bytesPerSample;
+  const audioSize = numSamples * channels * (bitsPerSample / 8);
 
-  // Build WAV file header
-  const header = Buffer.alloc(44); // Standard WAV header size
+  // Create a buffer large enough for header + audio data
+  const buffer = Buffer.alloc(audioSize + 100);
+
+  // Manually build WAV header for maximum compatibility
   let offset = 0;
 
   // "RIFF" chunk descriptor
-  header.write("RIFF", offset); offset += 4;
+  buffer.write("RIFF", offset); offset += 4;
 
   // File size - 8 bytes (will be 36 + audioDataLength)
-  header.writeUInt32LE(36 + audioDataLength, offset); offset += 4;
+  const audioDataLength = numSamples * channels * (bitsPerSample / 8);
+  buffer.writeUInt32LE(36 + audioDataLength, offset); offset += 4;
 
   // "WAVE" format
-  header.write("WAVE", offset); offset += 4;
+  buffer.write("WAVE", offset); offset += 4;
 
   // "fmt " subchunk
-  header.write("fmt ", offset); offset += 4;
+  buffer.write("fmt ", offset); offset += 4;
 
   // Subchunk1 size (16 for PCM)
-  header.writeUInt32LE(16, offset); offset += 4;
+  buffer.writeUInt32LE(16, offset); offset += 4;
 
   // Audio format (1 = PCM)
-  header.writeUInt16LE(1, offset); offset += 2;
+  buffer.writeUInt16LE(1, offset); offset += 2;
 
   // Number of channels
-  header.writeUInt16LE(channels, offset); offset += 2;
+  buffer.writeUInt16LE(channels, offset); offset += 2;
 
   // Sample rate
-  header.writeUInt32LE(sampleRate, offset); offset += 4;
+  buffer.writeUInt32LE(sampleRate, offset); offset += 4;
 
-  // Byte rate (SampleRate * NumChannels * BitsPerSample / 8)
-  header.writeUInt32LE(sampleRate * channels * bytesPerSample, offset); offset += 4;
+  // Byte rate
+  buffer.writeUInt32LE(sampleRate * channels * (bitsPerSample / 8), offset); offset += 4;
 
-  // Block align (NumChannels * BitsPerSample / 8)
-  header.writeUInt16LE(channels * bytesPerSample, offset); offset += 2;
+  // Block align
+  buffer.writeUInt16LE(channels * (bitsPerSample / 8), offset); offset += 2;
 
   // Bits per sample
-  header.writeUInt16LE(bitsPerSample, offset); offset += 2;
+  buffer.writeUInt16LE(bitsPerSample, offset); offset += 2;
 
   // "data" subchunk
-  header.write("data", offset); offset += 4;
+  buffer.write("data", offset); offset += 4;
 
-  // Subchunk2 size (audio data length)
-  header.writeUInt32LE(audioDataLength, offset);
+  // Subchunk2 size
+  buffer.writeUInt32LE(audioDataLength, offset); offset += 4;
 
-  // Generate PCM audio data (sine wave)
-  const audioData = Buffer.alloc(audioDataLength);
-  const frequency = 440; // A4 note
-  const volume = 0.3; // 30% volume to prevent clipping
-  let audioOffset = 0;
+  // Generate PCM audio data (sine wave at 440Hz)
+  const frequency = 440;
+  const volume = 0.3; // 30% volume to avoid clipping
+  let audioOffset = offset;
 
   for (let i = 0; i < numSamples; i++) {
-    // Generate sine wave sample
+    // Calculate sine wave sample
     const sample = Math.sin((2 * Math.PI * frequency * i) / sampleRate) * 32767 * volume;
     const int16 = Math.round(Math.max(-32768, Math.min(32767, sample)));
 
-    // Write to both channels
-    for (let ch = 0; ch < channels; ch++) {
-      audioData.writeInt16LE(int16, audioOffset);
-      audioOffset += 2;
-    }
+    // Write same sample to both channels
+    buffer.writeInt16LE(int16, audioOffset);
+    audioOffset += 2;
+    buffer.writeInt16LE(int16, audioOffset);
+    audioOffset += 2;
   }
 
-  return Buffer.concat([header, audioData]);
+  return buffer.slice(0, audioOffset);
 }
 
 // Helper function to create valid FLAC file
