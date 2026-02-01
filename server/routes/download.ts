@@ -1,5 +1,6 @@
 import { RequestHandler } from "express";
 import { detectPlatform, isValidUrl, normalizeUrl } from "../utils/urlUtils";
+import Writer from "wav";
 
 // Helper function to create valid MP3 file with proper structure
 function createValidMP3(): Buffer {
