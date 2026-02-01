@@ -187,54 +187,67 @@ function createValidAAC(): Buffer {
 
 // Helper function to create valid MP4 box structure
 function createMP4Box(): Buffer {
-  // ftyp box - file type box
-  const ftypBox = Buffer.concat([
-    Buffer.from([0x00, 0x00, 0x00, 0x20]), // Box size (32 bytes)
-    Buffer.from("ftyp"), // Box type
-    Buffer.from("isom"), // Major brand
-    Buffer.from([0x00, 0x00, 0x02, 0x00]), // Minor version
-    Buffer.from("isomiso2mp41"), // Compatible brands
-  ]);
+  // ftyp box - file type box (must be first)
+  const ftypBox = Buffer.alloc(32);
+  ftypBox.writeUInt32BE(32, 0); // Box size
+  ftypBox.write("ftyp", 4); // Box type
+  ftypBox.write("isom", 8); // Major brand
+  ftypBox.writeUInt32BE(0x00000200, 12); // Minor version
+  ftypBox.write("isomiso2mp41", 16); // Compatible brands
 
-  // Create minimal moov box (movie metadata)
-  const mvhdData = Buffer.concat([
-    Buffer.from([0x00, 0x00, 0x00, 0x6c]), // Size
-    Buffer.from("mvhd"), // Box type
-    Buffer.from([0x00, 0x00, 0x00, 0x00]), // Version + flags
-    Buffer.from([0x00, 0x00, 0x00, 0x00]), // Creation time
-    Buffer.from([0x00, 0x00, 0x00, 0x00]), // Modification time
-    Buffer.from([0x00, 0x00, 0x03, 0xe8]), // Timescale (1000)
-    Buffer.from([0x00, 0x00, 0x01, 0x00]), // Duration (256)
-    Buffer.from([0x00, 0x01, 0x00, 0x00]), // Playback speed (1.0)
-    Buffer.from([0x01, 0x00]), // Volume
-    Buffer.alloc(10, 0x00), // Reserved
-    Buffer.alloc(36, 0x00), // Matrix
-    Buffer.from([0x00, 0x00, 0x00, 0x00]), // Preview time
-    Buffer.from([0x00, 0x00, 0x00, 0x02]), // Next track ID
-  ]);
+  // Create minimal but valid moov box
+  // mvhd (movie header)
+  const mvhdBox = Buffer.alloc(108);
+  let mvhdOffset = 0;
+  mvhdBox.writeUInt32BE(108, mvhdOffset); mvhdOffset += 4; // Box size
+  mvhdBox.write("mvhd", mvhdOffset); mvhdOffset += 4; // Box type
+  mvhdBox.writeUInt32BE(0, mvhdOffset); mvhdOffset += 4; // Version and flags
+  mvhdBox.writeUInt32BE(0, mvhdOffset); mvhdOffset += 4; // Creation time
+  mvhdBox.writeUInt32BE(0, mvhdOffset); mvhdOffset += 4; // Modification time
+  mvhdBox.writeUInt32BE(1000, mvhdOffset); mvhdOffset += 4; // Timescale
+  mvhdBox.writeUInt32BE(10000, mvhdOffset); mvhdOffset += 4; // Duration (10 seconds)
+  mvhdBox.writeUInt32BE(0x00010000, mvhdOffset); mvhdOffset += 4; // Playback speed (1.0)
+  mvhdBox.writeUInt16BE(0x0100, mvhdOffset); mvhdOffset += 2; // Volume (1.0)
+  mvhdOffset += 10; // Reserved
+  // Identity matrix
+  mvhdBox.writeUInt32BE(0x00010000, mvhdOffset); mvhdOffset += 4;
+  mvhdBox.writeUInt32BE(0, mvhdOffset); mvhdOffset += 4;
+  mvhdBox.writeUInt32BE(0, mvhdOffset); mvhdOffset += 4;
+  mvhdBox.writeUInt32BE(0, mvhdOffset); mvhdOffset += 4;
+  mvhdBox.writeUInt32BE(0x00010000, mvhdOffset); mvhdOffset += 4;
+  mvhdBox.writeUInt32BE(0, mvhdOffset); mvhdOffset += 4;
+  mvhdBox.writeUInt32BE(0, mvhdOffset); mvhdOffset += 4;
+  mvhdBox.writeUInt32BE(0, mvhdOffset); mvhdOffset += 4;
+  mvhdBox.writeUInt32BE(0x40000000, mvhdOffset); mvhdOffset += 4;
+  mvhdBox.writeUInt32BE(0, mvhdOffset); mvhdOffset += 4; // Preview time
+  mvhdBox.writeUInt32BE(2, mvhdOffset); // Next track ID
 
-  const moovBox = Buffer.concat([
-    Buffer.from([0x00, 0x00, 0x00, 0x74]), // Box size
-    Buffer.from("moov"), // Box type
-    mvhdData,
-  ]);
+  const moovBox = Buffer.alloc(16 + 108);
+  let moovOffset = 0;
+  moovBox.writeUInt32BE(16 + 108, moovOffset); moovOffset += 4; // Box size
+  moovBox.write("moov", moovOffset); moovOffset += 4; // Box type
+  mvhdBox.copy(moovBox, moovOffset);
 
-  // mdat box - media data
-  const mediaData = Buffer.alloc(262144); // 256KB of valid media data
+  // mdat box - media data with H.264 NAL units
+  const mediaData = Buffer.alloc(1000000); // 1MB
+  let mdatOffset = 0;
 
-  // Create pseudo-video/audio data pattern
-  for (let i = 0; i < mediaData.length; i += 4) {
-    mediaData[i] = 0x00;
-    mediaData[i + 1] = 0x00;
-    mediaData[i + 2] = 0x00;
-    mediaData[i + 3] = 0x01; // Start code pattern
+  // Write H.264 NAL unit start codes and data
+  for (let i = 0; i < 1000 && mdatOffset < mediaData.length - 4; i++) {
+    mediaData[mdatOffset++] = 0x00;
+    mediaData[mdatOffset++] = 0x00;
+    mediaData[mdatOffset++] = 0x00;
+    mediaData[mdatOffset++] = 0x01;
+    // NAL unit data
+    for (let j = 0; j < 1000 && mdatOffset < mediaData.length; j++) {
+      mediaData[mdatOffset++] = (Math.random() * 256) | 0;
+    }
   }
 
-  const mdatBox = Buffer.concat([
-    Buffer.from([0x00, 0x04, 0x00, 0x08]), // Box size (256KB + 8)
-    Buffer.from("mdat"), // Box type
-    mediaData,
-  ]);
+  const mdatBox = Buffer.alloc(8 + mdatOffset);
+  mdatBox.writeUInt32BE(8 + mdatOffset, 0); // Box size
+  mdatBox.write("mdat", 4); // Box type
+  mediaData.copy(mdatBox, 8, 0, mdatOffset);
 
   return Buffer.concat([ftypBox, moovBox, mdatBox]);
 }
