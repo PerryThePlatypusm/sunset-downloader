@@ -31,12 +31,22 @@ async function downloadViaCobalt(
 ): Promise<{ buffer: Buffer; filename: string }> {
   const cobaltUrl = "https://api.cobalt.tools/api/json";
 
+  console.log("[Cobalt] Input URL:", url);
+
+  // Make sure URL has protocol
+  let finalUrl = url;
+  if (!finalUrl.startsWith("http://") && !finalUrl.startsWith("https://")) {
+    finalUrl = "https://" + finalUrl;
+  }
+
+  console.log("[Cobalt] Final URL:", finalUrl);
+
   const requestPayload = {
-    url: url,
+    url: finalUrl,
     downloadMode: audioOnly ? "audio" : "video",
   };
 
-  console.log("[Cobalt] Requesting:", url);
+  console.log("[Cobalt] Sending request with payload:", JSON.stringify(requestPayload));
 
   const response = await fetch(cobaltUrl, {
     method: "POST",
@@ -49,20 +59,34 @@ async function downloadViaCobalt(
 
   console.log("[Cobalt] Response status:", response.status);
 
+  const responseText = await response.text();
+  console.log("[Cobalt] Response text (first 500 chars):", responseText.substring(0, 500));
+
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error("[Cobalt] Error response:", errorText);
-    throw new Error(`API error ${response.status}`);
+    console.error("[Cobalt] HTTP Error:", response.status);
+    console.error("[Cobalt] Full response:", responseText);
+    throw new Error(`API error ${response.status}: ${responseText}`);
   }
 
-  const data = (await response.json()) as any;
+  let data: any;
+  try {
+    data = JSON.parse(responseText);
+  } catch (e) {
+    console.error("[Cobalt] JSON parse failed:", e);
+    throw new Error("Invalid API response");
+  }
+
+  console.log("[Cobalt] Parsed response:", JSON.stringify(data).substring(0, 400));
 
   if (data.status === "error" || data.error) {
-    throw new Error(data.error?.message || "Download failed");
+    const errorMsg = data.error?.message || data.error || "Unknown error";
+    console.error("[Cobalt] API error:", errorMsg);
+    throw new Error(`API: ${errorMsg}`);
   }
 
   if (!data.url) {
-    throw new Error("No download URL returned");
+    console.error("[Cobalt] No URL in response:", JSON.stringify(data));
+    throw new Error("No download link generated");
   }
 
   console.log("[Cobalt] Got download URL, fetching file");
@@ -71,6 +95,8 @@ async function downloadViaCobalt(
   const fileResponse = await fetch(data.url, {
     signal: AbortSignal.timeout(60000),
   });
+
+  console.log("[Cobalt] File response status:", fileResponse.status);
 
   if (!fileResponse.ok) {
     throw new Error(`File fetch failed: ${fileResponse.status}`);
@@ -99,29 +125,38 @@ async function downloadViaCobalt(
 export const handleDownload: RequestHandler = async (req, res) => {
   try {
     const body = req.body as DownloadRequest;
-    const { url, platform, quality, audioOnly } = body;
+    let { url, platform, quality, audioOnly } = body;
 
-    console.log("[Download] Request received");
-    console.log("[Download] URL:", url);
+    console.log("[Download] ========== NEW REQUEST ==========");
+    console.log("[Download] Raw URL from client:", url);
+    console.log("[Download] Platform:", platform);
+    console.log("[Download] AudioOnly:", audioOnly);
 
     // Validate URL
     if (!url || typeof url !== "string" || !url.trim()) {
+      console.error("[Download] URL missing or invalid type");
       return res.status(400).json({ error: "URL is required" });
     }
+
+    url = url.trim();
 
     if (url.length > 2048) {
       return res.status(400).json({ error: "URL is too long" });
     }
 
-    // Normalize and validate URL
+    // Normalize URL - but be careful not to break it
     let normalizedUrl: string;
     try {
       normalizedUrl = normalizeUrl(url);
+      console.log("[Download] Normalized URL:", normalizedUrl);
     } catch (error) {
-      return res.status(400).json({ error: "Invalid URL format" });
+      console.error("[Download] Normalization error:", error);
+      // If normalization fails, just use the URL as-is
+      normalizedUrl = url;
     }
 
     if (!isValidUrl(normalizedUrl)) {
+      console.error("[Download] URL validation failed");
       return res.status(400).json({ error: "Invalid URL format" });
     }
 
@@ -131,7 +166,7 @@ export const handleDownload: RequestHandler = async (req, res) => {
       detectedPlatform = detectPlatform(normalizedUrl);
     }
 
-    console.log("[Download] Platform:", detectedPlatform);
+    console.log("[Download] Detected platform:", detectedPlatform);
 
     if (!detectedPlatform || !SUPPORTED_PLATFORMS.includes(detectedPlatform)) {
       return res.status(400).json({
@@ -139,7 +174,7 @@ export const handleDownload: RequestHandler = async (req, res) => {
       });
     }
 
-    console.log("[Download] Starting Cobalt download");
+    console.log("[Download] Starting Cobalt download...");
 
     // Download via Cobalt
     const { buffer, filename } = await downloadViaCobalt(
@@ -147,7 +182,7 @@ export const handleDownload: RequestHandler = async (req, res) => {
       audioOnly || false
     );
 
-    console.log("[Download] Download successful");
+    console.log("[Download] Download successful, sending file");
 
     // Set headers
     res.setHeader(
@@ -162,25 +197,38 @@ export const handleDownload: RequestHandler = async (req, res) => {
 
     // Send file
     res.send(buffer);
+    console.log("[Download] File sent successfully");
   } catch (error) {
-    console.error("[Download] Error:", error);
+    console.error("[Download] ========== ERROR ==========");
+    console.error("[Download] Full error:", error);
 
     let errorMsg = "Failed to download media";
 
     if (error instanceof Error) {
-      if (error.message.includes("timeout")) {
-        errorMsg = "Download timed out. Please try again.";
-      } else if (error.message.includes("404")) {
-        errorMsg = "Content not found.";
-      } else if (error.message.includes("Empty")) {
+      const msg = error.message;
+      console.error("[Download] Error message:", msg);
+
+      if (msg.includes("timeout")) {
+        errorMsg = "Download took too long. Please try again.";
+      } else if (msg.includes("404")) {
+        errorMsg = "Content not found. Please check the URL.";
+      } else if (msg.includes("Empty")) {
         errorMsg = "No content found.";
-      } else if (error.message.includes("400")) {
-        errorMsg = "URL not recognized.";
+      } else if (msg.includes("API error")) {
+        // Extract the actual API error
+        if (msg.includes("400")) {
+          errorMsg = "The URL format is not recognized. Please try a direct link to the content.";
+        } else {
+          errorMsg = msg;
+        }
+      } else if (msg.includes("Invalid")) {
+        errorMsg = msg;
       } else {
-        errorMsg = error.message;
+        errorMsg = msg;
       }
     }
 
+    console.error("[Download] Sending error response:", errorMsg);
     return res.status(400).json({ error: errorMsg });
   }
 };
