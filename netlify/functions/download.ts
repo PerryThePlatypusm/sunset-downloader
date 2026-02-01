@@ -38,98 +38,119 @@ async function downloadViaCobalt(
   const cobaltUrl = "https://api.cobalt.tools/api/json";
 
   try {
-    // Build request payload - keep it simple for better compatibility
-    const requestPayload: any = {
+    // Build request payload with correct Cobalt API format
+    const requestPayload = {
       url: url,
       downloadMode: audioOnly ? "audio" : "video",
+      videoQuality: audioOnly ? undefined : (parseInt(quality || "720") || "best"),
+      audioQuality: audioOnly ? (parseInt(quality || "320") || "best") : undefined,
+      audioFormat: audioOnly ? "mp3" : undefined,
+      videoCodec: audioOnly ? undefined : "h264",
+      videoRange: audioOnly ? undefined : "vp9",
       isAudioOnly: audioOnly,
+      isTtsFetch: false,
+      disableMetadata: false,
     };
 
-    // Only add optional fields if they have values
-    if (audioOnly && quality) {
-      requestPayload.audioQuality = parseInt(quality) || 320;
-    }
+    // Remove undefined values
+    Object.keys(requestPayload).forEach(key =>
+      requestPayload[key as keyof typeof requestPayload] === undefined &&
+      delete requestPayload[key as keyof typeof requestPayload]
+    );
 
-    console.log(`[Cobalt] Sending request to ${cobaltUrl}`);
+    console.log(
+      `[Cobalt] Sending request:`,
+      JSON.stringify(requestPayload).substring(0, 200)
+    );
 
     const response = await fetch(cobaltUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "Accept": "application/json",
         "User-Agent": "SunsetDownloader/1.0",
       },
       body: JSON.stringify(requestPayload),
-      signal: AbortSignal.timeout(45000), // 45 second timeout
+      signal: AbortSignal.timeout(60000), // 60 second timeout
     });
 
     console.log(`[Cobalt] Response status: ${response.status}`);
 
+    const responseText = await response.text();
+    console.log(
+      `[Cobalt] Response text:`,
+      responseText.substring(0, 500)
+    );
+
     if (!response.ok) {
-      const errorText = await response.text().catch(() => "No error text");
-      console.error(`[Cobalt] HTTP Error: ${response.status} - ${errorText}`);
+      console.error(`[Cobalt] HTTP Error: ${response.status}`);
+      console.error(`[Cobalt] Response body:`, responseText);
       throw new Error(
-        `API returned ${response.status}. This platform might be temporarily unavailable.`,
+        `API error ${response.status}. The platform may be temporarily unavailable or the URL might be invalid.`
       );
     }
 
-    const data = (await response.json()) as any;
+    let data: any;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      console.error(`[Cobalt] Failed to parse JSON response:`, e);
+      throw new Error("Invalid response from download service");
+    }
+
+    console.log(`[Cobalt] Parsed response:`, JSON.stringify(data).substring(0, 300));
 
     // Check for API-level errors
-    if (data.status === "error" || data.error) {
-      const errorMsg =
-        data.error?.message ||
-        data.error ||
-        JSON.stringify(data.error) ||
-        "Unknown API error";
-      console.error(`[Cobalt] API error: ${errorMsg}`);
-      throw new Error(`Platform error: ${errorMsg}`);
+    if (data.status === "error") {
+      const errorMsg = data.error?.message || JSON.stringify(data.error) || "Unknown error";
+      console.error(`[Cobalt] API returned error: ${errorMsg}`);
+      throw new Error(`Download service error: ${errorMsg}`);
     }
 
     // Check if we got a URL back
     if (!data.url) {
-      console.error(`[Cobalt] No URL in response. Full response:`, data);
+      console.error(`[Cobalt] No URL in response. Full data:`, JSON.stringify(data));
       throw new Error(
-        "Could not get download link. The content might be unavailable or private.",
+        "Could not generate download link. The content might be unavailable, private, or restricted."
       );
     }
 
-    console.log(`[Cobalt] Got download URL, fetching file...`);
+    console.log(`[Cobalt] Got download URL, fetching media file...`);
 
-    // Fetch the actual media file
-    const fileResponse = await fetch(data.url, {
+    // Fetch the actual media file with retry logic
+    let fileResponse = await fetch(data.url, {
       headers: {
-        "User-Agent": "SunsetDownloader/1.0",
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
       },
-      signal: AbortSignal.timeout(45000),
+      signal: AbortSignal.timeout(60000),
     });
 
-    console.log(`[Cobalt] File response status: ${fileResponse.status}`);
+    console.log(`[Cobalt] File fetch status: ${fileResponse.status}`);
 
     if (!fileResponse.ok) {
+      console.error(`[Cobalt] File fetch failed: ${fileResponse.status}`);
       throw new Error(
-        `Failed to download file: ${fileResponse.status}. Try again in a moment.`,
+        `Failed to fetch media (${fileResponse.status}). Please try again.`
       );
     }
-
-    const contentType = fileResponse.headers.get("content-type");
-    console.log(`[Cobalt] Content-Type: ${contentType}`);
 
     const buffer = await fileResponse.arrayBuffer();
 
     if (buffer.byteLength === 0) {
-      throw new Error("Downloaded file is empty. Please try again.");
+      throw new Error("Downloaded media is empty. Please try again.");
     }
 
     console.log(
-      `[Cobalt] File downloaded successfully: ${buffer.byteLength} bytes`,
+      `[Cobalt] File downloaded successfully: ${buffer.byteLength} bytes`
     );
 
-    // Generate filename - use provided filename or create one
-    let filename = data.filename || `media_${Date.now()}`;
+    // Generate filename
+    let filename = data.filename || `download_${Date.now()}`;
 
-    // Ensure it has the right extension
+    // Ensure proper extension
     const extension = audioOnly ? "mp3" : "mp4";
-    if (!filename.endsWith(`.${extension}`)) {
+    if (!filename.toLowerCase().endsWith(`.${extension}`)) {
       filename = `${filename}.${extension}`;
     }
 
@@ -163,7 +184,7 @@ export async function handler(event: any) {
 
     console.log(`[Handler] URL: ${url}`);
     console.log(
-      `[Handler] Platform: ${platform}, Quality: ${quality}, AudioOnly: ${audioOnly}`,
+      `[Handler] Platform: ${platform}, Quality: ${quality}, AudioOnly: ${audioOnly}`
     );
 
     // Validate URL
@@ -222,14 +243,14 @@ export async function handler(event: any) {
     const { buffer, filename } = await downloadViaCobalt(
       normalizedUrl,
       audioOnly || false,
-      quality,
+      quality
     );
 
     // Convert to base64
     const base64 = buffer.toString("base64");
 
     console.log(
-      `[Handler] Download successful! File: ${filename}, Size: ${buffer.length}`,
+      `[Handler] Download successful! File: ${filename}, Size: ${buffer.length}`
     );
 
     return {
@@ -246,11 +267,12 @@ export async function handler(event: any) {
   } catch (error: any) {
     console.error("[Handler] Download failed:", error);
 
-    let userMessage =
-      error.message || "Failed to download. Please try again in a moment.";
+    let userMessage = error.message || "Failed to download. Please try again.";
 
-    // Provide more specific error messages
-    if (userMessage.includes("timeout")) {
+    // Improve error messages
+    if (userMessage.includes("400")) {
+      userMessage = "The URL format is not supported. Please try a different URL.";
+    } else if (userMessage.includes("timeout")) {
       userMessage = "Download took too long. Please try again.";
     } else if (userMessage.includes("empty")) {
       userMessage = "The content appears to be empty or unavailable.";
