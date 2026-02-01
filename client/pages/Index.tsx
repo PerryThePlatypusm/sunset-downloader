@@ -399,7 +399,7 @@ export default function Index() {
           </div>
 
           {/* Feature Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mt-8 sm:mt-12">
             <div className="bg-gradient-to-br from-sunset-800/30 to-transparent border border-sunset-700/30 rounded-lg p-6 backdrop-blur-sm">
               <div className="w-12 h-12 bg-sunset-500/20 rounded-lg flex items-center justify-center mb-3">
                 <Zap className="w-6 h-6 text-sunset-400" />
