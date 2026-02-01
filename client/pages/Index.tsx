@@ -127,10 +127,19 @@ export default function Index() {
       const downloadUrl = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = downloadUrl;
-      // Audio downloads are always WAV for maximum compatibility across all platforms
-      // Video downloads are MP4
-      const fileExtension = downloadType === "audio" ? "wav" : "mp4";
-      a.download = `media_${Date.now()}.${fileExtension}`;
+
+      // Get filename from Content-Disposition header or use default
+      const contentDisposition = response.headers.get("content-disposition");
+      let fileName = `media_${Date.now()}.${downloadType === "audio" ? "mp3" : "mp4"}`;
+
+      if (contentDisposition && contentDisposition.includes("filename=")) {
+        const matches = contentDisposition.match(/filename="([^"]+)"/);
+        if (matches && matches[1]) {
+          fileName = matches[1];
+        }
+      }
+
+      a.download = fileName;
       document.body.appendChild(a);
 
       try {
