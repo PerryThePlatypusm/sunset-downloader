@@ -86,13 +86,13 @@ export const handleDownload: RequestHandler = async (req, res) => {
     const responseText = await response.text();
     console.log(
       "[Download] Cobalt response (first 300 chars):",
-      responseText.substring(0, 300)
+      responseText.substring(0, 300),
     );
 
     if (!response.ok) {
       console.error("[Download] Cobalt HTTP error:", response.status);
       console.error("[Download] Cobalt error response:", responseText);
-      
+
       // Try to parse error from response
       try {
         const errorData = JSON.parse(responseText);
@@ -102,7 +102,7 @@ export const handleDownload: RequestHandler = async (req, res) => {
       } catch (e) {
         // Ignore parse errors
       }
-      
+
       return res.status(400).json({
         error: "URL not recognized by download service",
       });
@@ -118,7 +118,7 @@ export const handleDownload: RequestHandler = async (req, res) => {
 
     console.log(
       "[Download] Parsed response:",
-      JSON.stringify(data).substring(0, 300)
+      JSON.stringify(data).substring(0, 300),
     );
 
     // Check for API errors

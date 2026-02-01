@@ -40,12 +40,12 @@ async function downloadViaCobalt(
   try {
     // Minimal Cobalt API request - only essential fields
     const requestPayload = {
-    url: url, // Send RAW URL - don't modify it
-    downloadMode: audioOnly ? "audio" : "video",
-  };
+      url: url, // Send RAW URL - don't modify it
+      downloadMode: audioOnly ? "audio" : "video",
+    };
 
-  console.log(`[Cobalt] Sending raw URL:`, url);
-  console.log(`[Cobalt] Request payload:`, JSON.stringify(requestPayload));
+    console.log(`[Cobalt] Sending raw URL:`, url);
+    console.log(`[Cobalt] Request payload:`, JSON.stringify(requestPayload));
 
     const response = await fetch(cobaltUrl, {
       method: "POST",
