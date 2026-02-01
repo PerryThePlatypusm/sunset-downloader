@@ -23,27 +23,31 @@ interface DownloadRequest {
   episodes?: number[];
 }
 
-// Use Cobalt API for reliable multi-platform downloading
-async function downloadViaCobalt(
+// Use FastSaverAPI for reliable multi-platform downloading
+async function downloadViaFastSaver(
   url: string,
   audioOnly: boolean,
 ): Promise<{ buffer: Buffer; filename: string }> {
-  console.log(`[Cobalt] Starting download for: ${url}`);
-  console.log(`[Cobalt] Audio only: ${audioOnly}`);
+  console.log(`[FastSaver] Starting download for: ${url}`);
+  console.log(`[FastSaver] Audio only: ${audioOnly}`);
 
-  const cobaltUrl = "https://api.cobalt.tools/api/json";
+  const fastSaverUrl = "https://api.fastsaverapi.com/download";
+  const token = process.env.FASTSAVER_API_TOKEN;
+
+  if (!token) {
+    throw new Error("FastSaverAPI token not configured");
+  }
 
   try {
-    // Minimal Cobalt API request - only essential fields
     const requestPayload = {
-      url: url, // Send RAW URL - don't modify it
-      downloadMode: audioOnly ? "audio" : "video",
+      url: url,
+      token: token,
     };
 
-    console.log(`[Cobalt] Sending raw URL:`, url);
-    console.log(`[Cobalt] Request payload:`, JSON.stringify(requestPayload));
+    console.log(`[FastSaver] Sending URL:`, url);
+    console.log(`[FastSaver] Request payload:`, JSON.stringify(requestPayload));
 
-    const response = await fetch(cobaltUrl, {
+    const response = await fetch(fastSaverUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -52,17 +56,17 @@ async function downloadViaCobalt(
       signal: AbortSignal.timeout(60000),
     });
 
-    console.log(`[Cobalt] Response status: ${response.status}`);
+    console.log(`[FastSaver] Response status: ${response.status}`);
 
     const responseText = await response.text();
     console.log(
-      `[Cobalt] Response (first 500 chars):`,
+      `[FastSaver] Response (first 500 chars):`,
       responseText.substring(0, 500),
     );
 
     if (!response.ok) {
-      console.error(`[Cobalt] HTTP ${response.status} Error`);
-      console.error(`[Cobalt] Full response:`, responseText);
+      console.error(`[FastSaver] HTTP ${response.status} Error`);
+      console.error(`[FastSaver] Full response:`, responseText);
       throw new Error(`HTTP ${response.status}`);
     }
 
@@ -70,33 +74,33 @@ async function downloadViaCobalt(
     try {
       data = JSON.parse(responseText);
     } catch (e) {
-      console.error(`[Cobalt] JSON parse error:`, e);
-      console.error(`[Cobalt] Response was:`, responseText);
+      console.error(`[FastSaver] JSON parse error:`, e);
+      console.error(`[FastSaver] Response was:`, responseText);
       throw new Error("Invalid API response");
     }
 
     console.log(
-      `[Cobalt] Parsed data:`,
+      `[FastSaver] Parsed data:`,
       JSON.stringify(data).substring(0, 300),
     );
 
     // Check for errors
-    if (data.status === "error" || data.error) {
-      const msg = data.error?.message || data.error || "API error";
-      console.error(`[Cobalt] API error:`, msg);
+    if (data.error) {
+      const msg = data.error || "API error";
+      console.error(`[FastSaver] API error:`, msg);
       throw new Error(msg);
     }
 
     // Get download URL
     if (!data.url) {
       console.error(
-        `[Cobalt] Missing URL in response. Data:`,
+        `[FastSaver] Missing URL in response. Data:`,
         JSON.stringify(data),
       );
       throw new Error("No download URL returned");
     }
 
-    console.log(`[Cobalt] Got download URL, fetching file...`);
+    console.log(`[FastSaver] Got download URL, fetching file...`);
 
     // Fetch the media file
     const fileResponse = await fetch(data.url, {
