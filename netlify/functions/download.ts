@@ -68,7 +68,7 @@ async function downloadViaCobalt(
       const errorText = await response.text().catch(() => "No error text");
       console.error(`[Cobalt] HTTP Error: ${response.status} - ${errorText}`);
       throw new Error(
-        `API returned ${response.status}. This platform might be temporarily unavailable.`
+        `API returned ${response.status}. This platform might be temporarily unavailable.`,
       );
     }
 
@@ -89,7 +89,7 @@ async function downloadViaCobalt(
     if (!data.url) {
       console.error(`[Cobalt] No URL in response. Full response:`, data);
       throw new Error(
-        "Could not get download link. The content might be unavailable or private."
+        "Could not get download link. The content might be unavailable or private.",
       );
     }
 
@@ -107,7 +107,7 @@ async function downloadViaCobalt(
 
     if (!fileResponse.ok) {
       throw new Error(
-        `Failed to download file: ${fileResponse.status}. Try again in a moment.`
+        `Failed to download file: ${fileResponse.status}. Try again in a moment.`,
       );
     }
 
@@ -120,7 +120,9 @@ async function downloadViaCobalt(
       throw new Error("Downloaded file is empty. Please try again.");
     }
 
-    console.log(`[Cobalt] File downloaded successfully: ${buffer.byteLength} bytes`);
+    console.log(
+      `[Cobalt] File downloaded successfully: ${buffer.byteLength} bytes`,
+    );
 
     // Generate filename - use provided filename or create one
     let filename = data.filename || `media_${Date.now()}`;
@@ -160,7 +162,9 @@ export async function handler(event: any) {
     const { url, platform, quality, audioOnly } = body;
 
     console.log(`[Handler] URL: ${url}`);
-    console.log(`[Handler] Platform: ${platform}, Quality: ${quality}, AudioOnly: ${audioOnly}`);
+    console.log(
+      `[Handler] Platform: ${platform}, Quality: ${quality}, AudioOnly: ${audioOnly}`,
+    );
 
     // Validate URL
     if (!url || typeof url !== "string" || !url.trim()) {
@@ -179,7 +183,9 @@ export async function handler(event: any) {
       console.error(`[Handler] URL normalization failed:`, e);
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: "Invalid URL format. Please check and try again." }),
+        body: JSON.stringify({
+          error: "Invalid URL format. Please check and try again.",
+        }),
       };
     }
 
@@ -187,7 +193,9 @@ export async function handler(event: any) {
     if (!isValidUrl(normalizedUrl)) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: "URL is not valid. Please check and try again." }),
+        body: JSON.stringify({
+          error: "URL is not valid. Please check and try again.",
+        }),
       };
     }
 
@@ -220,7 +228,9 @@ export async function handler(event: any) {
     // Convert to base64
     const base64 = buffer.toString("base64");
 
-    console.log(`[Handler] Download successful! File: ${filename}, Size: ${buffer.length}`);
+    console.log(
+      `[Handler] Download successful! File: ${filename}, Size: ${buffer.length}`,
+    );
 
     return {
       statusCode: 200,
