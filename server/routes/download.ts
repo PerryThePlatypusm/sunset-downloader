@@ -46,7 +46,10 @@ async function downloadViaCobalt(
     downloadMode: audioOnly ? "audio" : "video",
   };
 
-  console.log("[Cobalt] Sending request with payload:", JSON.stringify(requestPayload));
+  console.log(
+    "[Cobalt] Sending request with payload:",
+    JSON.stringify(requestPayload),
+  );
 
   const response = await fetch(cobaltUrl, {
     method: "POST",
@@ -60,7 +63,10 @@ async function downloadViaCobalt(
   console.log("[Cobalt] Response status:", response.status);
 
   const responseText = await response.text();
-  console.log("[Cobalt] Response text (first 500 chars):", responseText.substring(0, 500));
+  console.log(
+    "[Cobalt] Response text (first 500 chars):",
+    responseText.substring(0, 500),
+  );
 
   if (!response.ok) {
     console.error("[Cobalt] HTTP Error:", response.status);
@@ -76,7 +82,10 @@ async function downloadViaCobalt(
     throw new Error("Invalid API response");
   }
 
-  console.log("[Cobalt] Parsed response:", JSON.stringify(data).substring(0, 400));
+  console.log(
+    "[Cobalt] Parsed response:",
+    JSON.stringify(data).substring(0, 400),
+  );
 
   if (data.status === "error" || data.error) {
     const errorMsg = data.error?.message || data.error || "Unknown error";
@@ -179,16 +188,13 @@ export const handleDownload: RequestHandler = async (req, res) => {
     // Download via Cobalt
     const { buffer, filename } = await downloadViaCobalt(
       normalizedUrl,
-      audioOnly || false
+      audioOnly || false,
     );
 
     console.log("[Download] Download successful, sending file");
 
     // Set headers
-    res.setHeader(
-      "Content-Type",
-      audioOnly ? "audio/mpeg" : "video/mp4"
-    );
+    res.setHeader("Content-Type", audioOnly ? "audio/mpeg" : "video/mp4");
     res.setHeader("Content-Length", buffer.length.toString());
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
     res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
@@ -217,7 +223,8 @@ export const handleDownload: RequestHandler = async (req, res) => {
       } else if (msg.includes("API error")) {
         // Extract the actual API error
         if (msg.includes("400")) {
-          errorMsg = "The URL format is not recognized. Please try a direct link to the content.";
+          errorMsg =
+            "The URL format is not recognized. Please try a direct link to the content.";
         } else {
           errorMsg = msg;
         }
