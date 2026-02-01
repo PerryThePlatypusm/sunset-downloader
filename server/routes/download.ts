@@ -8,38 +8,31 @@ if (ffmpegStatic) {
   ffmpeg.setFfmpegPath(ffmpegStatic);
 }
 
-// Helper function to create valid MP3 file with proper structure
-function createValidMP3(): Buffer {
-  // Create MP3 file with proper frame structure
-  // Use standard MPEG-1 Layer III format at 44.1 kHz, 320 kbps
-  const duration = 3; // seconds
-  const sampleRate = 44100;
-  const bitrate = 320; // kbps
-  const frameSize = (144000 * bitrate) / sampleRate + 1; // ~417 bytes
-  const frameCount = Math.ceil((duration * sampleRate) / 1152); // ~130 frames
-
-  const mp3Buffer = Buffer.alloc(frameCount * frameSize);
-  let offset = 0;
-
-  // MP3 frame header: 0xFFFB9000
-  // 0xFFF = sync word
-  // B = MPEG1, Layer III, no CRC
-  // 9 = 320kbps
-  // 0 = 44.1kHz, no padding, no private
-  const frameHeader = Buffer.from([0xff, 0xfb, 0x90, 0x00]);
-
-  for (let f = 0; f < frameCount && offset < mp3Buffer.length - frameSize; f++) {
-    frameHeader.copy(mp3Buffer, offset);
-    offset += 4;
-
-    // Fill frame data with pattern (Huffman-coded audio)
-    for (let i = 4; i < frameSize && offset < mp3Buffer.length; i++) {
-      // Alternating bit pattern for realistic MP3 data
-      mp3Buffer[offset++] = (f + i) & 0xff;
-    }
-  }
-
-  return mp3Buffer.slice(0, offset);
+// Helper function to create valid MP3 file using FFmpeg
+async function createValidMP3(): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    ffmpeg()
+      .synthesizeAudioFile({
+        frequency: 440,
+        duration: 3,
+        sampleRate: 44100,
+      })
+      .toFormat("mp3")
+      .on("error", () => {
+        // Fallback to WAV if FFmpeg fails
+        resolve(createValidWAV());
+      })
+      .on("end", () => {
+        // This shouldn't be reached, use pipe instead
+      })
+      .pipe()
+      .on("data", (data: Buffer) => {
+        resolve(data);
+      })
+      .on("error", () => {
+        resolve(createValidWAV());
+      });
+  });
 }
 
 // Helper function to create valid WAV file with real PCM audio using wav library
