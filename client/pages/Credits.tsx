@@ -341,10 +341,11 @@ export default function Credits() {
                 </div>
               </div>
               <p className="text-sunset-300 text-sm mt-4">
-                All audio/video files are generated with proper codec headers,
-                metadata structures, and valid frame data for 100% playback
-                compatibility across all platforms and devices. Powered by
-                FFmpeg and native binary encoding for maximum codec compliance.
+                Real media downloads from 1000+ platforms powered by yt-dlp.
+                Downloads are streamed directly from source platforms in MP3
+                (audio) or MP4 (video) format. Supports all major quality levels
+                with full compatibility across Windows Media Player, VLC, iOS,
+                Android, and all modern browsers.
               </p>
             </div>
           </div>
