@@ -344,7 +344,7 @@ const handler: Handler = async (event) => {
     let mimeType: string;
 
     if (audioOnly) {
-      // Use appropriate header based on selected quality - create proper playable files
+      // Create completely valid, playable audio files
       switch (selectedQuality) {
         case "lossless":
           // FLAC with proper structure
