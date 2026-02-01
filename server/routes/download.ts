@@ -3,40 +3,30 @@ import { detectPlatform, isValidUrl, normalizeUrl } from "../utils/urlUtils";
 
 // Helper function to create valid MP3 file with proper structure
 function createValidMP3(): Buffer {
-  // Start with ID3v2.4 header for better compatibility
-  const id3Header = Buffer.alloc(10);
-  id3Header.write("ID3", 0);
-  id3Header[3] = 0x04; // Version 2.4.0
-  id3Header[4] = 0x00;
-  id3Header[5] = 0x00; // Flags
-  // Size is syncsafe integer (zeros for now)
-  id3Header[6] = 0x00;
-  id3Header[7] = 0x00;
-  id3Header[8] = 0x00;
-  id3Header[9] = 0x00;
-
-  // Create MP3 frames with proper structure
-  const mp3Data = Buffer.alloc(65536);
+  // MP3 files work best with frame-based structure
+  // Create ~3 seconds of audio (roughly 150 frames at 320kbps MPEG1)
+  const mp3Data = Buffer.alloc(122880); // ~120KB for 3 seconds at 320kbps
   let offset = 0;
 
-  // MPEG-1 Layer III frame sync word 0xFFF (11 bits)
-  // Frame header: 0xFFFB9000 (320kbps, 44.1kHz, no CRC, no padding)
-  const frameSyncWord = Buffer.from([0xff, 0xfb, 0x90, 0x00]);
+  // MPEG-1 Layer III frame header for 320 kbps, 44.1 kHz
+  // 0xFFFB = sync word + flags
+  // 0x9000 = bitrate (320kbps) + sample rate (44.1kHz)
+  const frameHeader = Buffer.from([0xff, 0xfb, 0x90, 0x00]);
+  const frameSizeBytes = 417; // Approximate frame size for 320kbps at 44.1kHz
 
-  // Generate multiple frames
-  for (let f = 0; f < 150 && offset < mp3Data.length - 418; f++) {
-    // Write frame sync and header
-    frameSyncWord.copy(mp3Data, offset);
+  // Generate frames
+  for (let f = 0; f < 140 && offset < mp3Data.length - frameSizeBytes; f++) {
+    frameHeader.copy(mp3Data, offset);
     offset += 4;
 
-    // Write frame data (413 bytes) with valid pattern
-    const frameData = Math.random() * 256;
-    for (let i = 0; i < 413 && offset < mp3Data.length; i++) {
-      mp3Data[offset++] = ((i % 256) ^ (Math.floor(frameData) % 256)) & 0xff;
+    // Fill rest of frame with pseudo-audio data
+    for (let i = 4; i < frameSizeBytes && offset < mp3Data.length; i++) {
+      // Create a pattern that looks like encoded audio
+      mp3Data[offset++] = (Math.random() * 256) | 0;
     }
   }
 
-  return Buffer.concat([id3Header, mp3Data.slice(0, offset)]);
+  return mp3Data.slice(0, offset);
 }
 
 // Helper function to create valid WAV file with proper PCM audio
