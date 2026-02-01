@@ -210,11 +210,13 @@ export async function handler(event: any) {
 
     // Friendly errors
     if (msg.includes("400")) {
-      msg = "URL not recognized. Please try a direct link.";
+      msg = "Could not download this content. Please check the URL.";
     } else if (msg.includes("timeout")) {
       msg = "Download timed out. Please try again.";
     } else if (msg.includes("Empty")) {
       msg = "No content found.";
+    } else if (msg.includes("token")) {
+      msg = "API configuration error. Please contact support.";
     }
 
     return {
