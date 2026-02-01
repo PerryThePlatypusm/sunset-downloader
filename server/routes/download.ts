@@ -1,5 +1,6 @@
 import { RequestHandler } from "express";
 import { detectPlatform, isValidUrl, normalizeUrl } from "../utils/urlUtils";
+import ytdl from "ytdl-core";
 
 interface DownloadRequest {
   url: string;
