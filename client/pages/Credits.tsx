@@ -336,20 +336,6 @@ export default function Credits() {
               </div>
               <ExternalLink className="w-4 h-4 text-sunset-400" />
             </a>
-            <a
-              href="https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-between p-4 bg-sunset-900/30 hover:bg-sunset-900/50 rounded-lg border border-sunset-700/50 transition-colors group"
-            >
-              <div>
-                <p className="text-sunset-300 font-semibold group-hover:text-sunset-100">
-                  Web Audio API
-                </p>
-                <p className="text-sunset-500 text-xs">Ambient Sound Effects</p>
-              </div>
-              <ExternalLink className="w-4 h-4 text-sunset-400" />
-            </a>
           </div>
         </div>
 
