@@ -352,20 +352,19 @@ export default function Credits() {
               </div>
               <div className="mt-4 p-4 bg-sunset-500/10 border border-sunset-500/30 rounded-lg">
                 <p className="text-sunset-200 font-semibold mb-2">
-                  ✨ Platform Support
+                  🚀 Pure JavaScript Downloading
                 </p>
                 <p className="text-sunset-300 text-sm">
-                  Real media downloads from{" "}
-                  <span className="font-bold text-sunset-100">
-                    1000+ platforms
-                  </span>{" "}
-                  powered by yt-dlp, including YouTube, Spotify, Instagram,
-                  TikTok, Twitter, SoundCloud, Twitch, Crunchyroll, and hundreds
-                  more. Downloads stream directly from source platforms in MP3
-                  (audio) or MP4 (video) format with full lossless audio support
-                  available for compatible sources. Universal compatibility
-                  guaranteed across Windows Media Player, VLC, iOS, Android,
-                  macOS, and all modern browsers.
+                  Downloads powered by{" "}
+                  <span className="font-bold text-sunset-100">ytdl-core</span> on
+                  Netlify Functions. Currently supporting{" "}
+                  <span className="font-bold text-sunset-100">YouTube</span>{" "}
+                  downloads in MP3 (audio) or MP4 (video) format at any quality
+                  level. Built entirely in JavaScript with no external
+                  dependencies, ensuring fast, reliable downloads that work on
+                  all platforms. Universal compatibility guaranteed across
+                  Windows Media Player, VLC, iOS, Android, macOS, and all modern
+                  browsers.
                 </p>
               </div>
             </div>
