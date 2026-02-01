@@ -349,13 +349,8 @@ const handler: Handler = async (event) => {
           mimeType = "audio/mpeg";
       }
     } else {
-      // MP4 header + mock data (about 50KB)
-      const mp4Header = Buffer.from([
-        0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d,
-        0x00, 0x00, 0x00, 0x00,
-      ]);
-      const mockData = Buffer.alloc(51200, 0x00);
-      mockContent = Buffer.concat([mp4Header, mockData]);
+      // MP4 video file with proper structure
+      mockContent = createMP4Box();
       mimeType = "video/mp4";
     }
 
