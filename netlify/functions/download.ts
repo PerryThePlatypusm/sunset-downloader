@@ -69,10 +69,14 @@ async function downloadViaCobalt(
     }
 
     const data = (await response.json()) as any;
-    console.log("[Cobalt] Response data:", JSON.stringify(data).substring(0, 200));
+    console.log(
+      "[Cobalt] Response data:",
+      JSON.stringify(data).substring(0, 200),
+    );
 
     if (data.status === "error") {
-      const errorMsg = data.error?.message || JSON.stringify(data.error) || "Unknown error";
+      const errorMsg =
+        data.error?.message || JSON.stringify(data.error) || "Unknown error";
       console.error("[Cobalt] API error:", errorMsg);
       throw new Error(`Cobalt error: ${errorMsg}`);
     }
@@ -126,7 +130,12 @@ export async function handler(event: any) {
     const body = JSON.parse(event.body || "{}") as DownloadRequest;
     const { url, platform, quality, audioOnly } = body;
 
-    console.log("[Handler] Parsed request:", { url, platform, quality, audioOnly });
+    console.log("[Handler] Parsed request:", {
+      url,
+      platform,
+      quality,
+      audioOnly,
+    });
 
     // Validate URL
     if (!url || typeof url !== "string" || !url.trim()) {
