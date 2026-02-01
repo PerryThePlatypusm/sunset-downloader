@@ -162,24 +162,27 @@ function createValidOGG(): Buffer {
 
 // Helper function to create valid AAC file
 function createValidAAC(): Buffer {
-  // ADTS frame (Audio Data Transport Stream)
-  const adtsFrames = Buffer.alloc(65536);
+  const adtsFrames = Buffer.alloc(262144); // 256KB
+  let offset = 0;
 
-  // Create repeating ADTS frame headers
-  const adtsHeader = Buffer.from([
-    0xff, 0xf1, // Sync word
-    0x50, // Profile + sample rate
-    0x80, // Channel + frame length
-    0x1f, // Frame length
-    0xfc, // Buffer fullness
-    0x00, // Raw blocks
-  ]);
+  // Create multiple ADTS frames
+  for (let frameNum = 0; frameNum < 4000 && offset < adtsFrames.length - 8; frameNum++) {
+    // ADTS header (7 bytes minimum)
+    adtsFrames[offset++] = 0xff; // Sync word (11 bits)
+    adtsFrames[offset++] = 0xf1; // Sync word + MPEG4 + no CRC
+    adtsFrames[offset++] = 0x50; // Profile (AAC LC) + sample rate index
+    adtsFrames[offset++] = 0x80; // Channels + frame length
+    adtsFrames[offset++] = 0x1f; // Frame length (part 2)
+    adtsFrames[offset++] = 0xfc; // Buffer fullness (high)
+    adtsFrames[offset++] = 0x00; // Buffer fullness (low) + number of raw blocks
 
-  for (let i = 0; i < adtsFrames.length - 6; i += 7) {
-    adtsHeader.copy(adtsFrames, i);
+    // Add 200 bytes of pseudo-audio data per frame
+    for (let i = 0; i < 200 && offset < adtsFrames.length; i++) {
+      adtsFrames[offset++] = Math.floor(Math.random() * 256);
+    }
   }
 
-  return adtsFrames;
+  return adtsFrames.slice(0, offset);
 }
 
 // Helper function to create valid MP4 box structure
