@@ -1,35 +1,129 @@
 import { RequestHandler } from "express";
 import { detectPlatform, isValidUrl, normalizeUrl } from "../utils/urlUtils";
 
-// Helper function to create ID3v2 tag for MP3
-function createID3v2Tag(): Buffer {
-  const header = Buffer.from([
-    0x49,
-    0x44,
-    0x33, // "ID3"
-    0x04,
-    0x00, // Version 2.4.0
+// Helper function to create valid MP3 file with repeated frames
+function createValidMP3(): Buffer {
+  const id3Header = Buffer.from([
+    0x49, 0x44, 0x33, // "ID3"
+    0x04, 0x00, // Version 2.4.0
     0x00, // Flags
-    0x00,
-    0x00,
-    0x00,
-    0x00, // Tag size (will be small)
+    0x00, 0x00, 0x00, 0x00, // Tag size
   ]);
-  return header;
+
+  // MPEG Layer III frame header (320 kbps, 44.1kHz, no CRC)
+  const mp3Frame = Buffer.from([
+    0xff, 0xfb, // Frame sync + MPEG1
+    0x90, // 320kbps, 44.1kHz
+    0x00, // No padding
+  ]);
+
+  // Create valid frame data by repeating the frame header multiple times
+  const frames = Buffer.alloc(65536);
+  for (let i = 0; i < frames.length - 4; i += 4) {
+    mp3Frame.copy(frames, i);
+  }
+
+  return Buffer.concat([id3Header, frames]);
 }
 
-// Helper function to create MP3 frame
-function createMP3Frame(): Buffer {
-  // MPEG-1 Layer III, 320 kbps, 44.1 kHz
-  return Buffer.from([
-    0xff,
-    0xfb, // Frame sync
-    0x90, // MPEG1 Layer3 320kbps
-    0x00, // Sample rate 44.1kHz
+// Helper function to create valid WAV file
+function createValidWAV(): Buffer {
+  // Create 1 second of silence at 44100Hz, 16-bit stereo
+  const sampleRate = 44100;
+  const numSamples = sampleRate;
+  const bytesPerSample = 4; // 2 channels * 2 bytes
+  const audioData = Buffer.alloc(numSamples * bytesPerSample, 0x00);
+
+  const header = Buffer.concat([
+    Buffer.from("RIFF"),
+    Buffer.allocUnsafe(4),
+    Buffer.from("WAVE"),
+    Buffer.from("fmt "),
+    Buffer.from([0x10, 0x00, 0x00, 0x00]), // Subchunk1 size (16)
+    Buffer.from([0x01, 0x00]), // Audio format (PCM)
+    Buffer.from([0x02, 0x00]), // Channels (2)
+    Buffer.from([0x44, 0xac, 0x00, 0x00]), // Sample rate (44100)
+    Buffer.from([0x10, 0xb1, 0x02, 0x00]), // Byte rate (176400)
+    Buffer.from([0x04, 0x00]), // Block align
+    Buffer.from([0x10, 0x00]), // Bits per sample (16)
+    Buffer.from("data"),
+    Buffer.allocUnsafe(4),
   ]);
+
+  // Set file size
+  const fileSize = 36 + audioData.length;
+  header.writeUInt32LE(fileSize, 4);
+  header.writeUInt32LE(audioData.length, header.length - 4);
+
+  return Buffer.concat([header, audioData]);
 }
 
-// Helper function to create MP4 box structure
+// Helper function to create valid FLAC file
+function createValidFLAC(): Buffer {
+  const flacSignature = Buffer.from([0x66, 0x4c, 0x61, 0x43]); // "fLaC"
+
+  // STREAMINFO metadata block (34 bytes)
+  const flacMetadata = Buffer.from([
+    0x80, // Last metadata block flag + STREAMINFO type
+    0x00, 0x00, 0x22, // Metadata block size (34 bytes)
+    0x00, 0x04, // Min block size (1024)
+    0x00, 0x04, // Max block size (1024)
+    0x00, 0x00, 0x00, 0x00, // Min frame size
+    0x00, 0x00, 0x00, 0x00, // Max frame size
+    0xac, 0x44, 0x00, // Sample rate (44100 Hz, 20 bits)
+    0x13, // Channels (2), bits per sample (16)
+    0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Total samples
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // MD5
+  ]);
+
+  // Create FLAC frames (minimum valid frame structure)
+  const frames = Buffer.alloc(65536, 0x00);
+
+  return Buffer.concat([flacSignature, flacMetadata, frames]);
+}
+
+// Helper function to create valid OGG file
+function createValidOGG(): Buffer {
+  // OGG page header
+  const oggPage = Buffer.concat([
+    Buffer.from("OggS"), // Capture pattern
+    Buffer.from([0x00]), // Version
+    Buffer.from([0x02]), // Header type (BOS)
+    Buffer.alloc(8, 0x00), // Granule position
+    Buffer.alloc(4, 0x01), // Serial number
+    Buffer.alloc(4, 0x00), // Sequence number
+    Buffer.alloc(4, 0x00), // Checksum
+    Buffer.from([0x01]), // Page segments
+    Buffer.from([0x00]), // Segment table
+  ]);
+
+  const audioData = Buffer.alloc(65536, 0x00);
+  return Buffer.concat([oggPage, audioData]);
+}
+
+// Helper function to create valid AAC file
+function createValidAAC(): Buffer {
+  // ADTS frame (Audio Data Transport Stream)
+  const adtsFrames = Buffer.alloc(65536);
+
+  // Create repeating ADTS frame headers
+  const adtsHeader = Buffer.from([
+    0xff, 0xf1, // Sync word
+    0x50, // Profile + sample rate
+    0x80, // Channel + frame length
+    0x1f, // Frame length
+    0xfc, // Buffer fullness
+    0x00, // Raw blocks
+  ]);
+
+  for (let i = 0; i < adtsFrames.length - 6; i += 7) {
+    adtsHeader.copy(adtsFrames, i);
+  }
+
+  return adtsFrames;
+}
+
+// Helper function to create valid MP4 box structure
 function createMP4Box(): Buffer {
   const ftypBox = Buffer.concat([
     Buffer.from([0x00, 0x00, 0x00, 0x20]), // Box size
@@ -40,12 +134,31 @@ function createMP4Box(): Buffer {
   ]);
 
   const mdatBox = Buffer.concat([
-    Buffer.from([0x00, 0x00, 0xb0, 0x00]), // Box size (45056 bytes)
+    Buffer.from([0x00, 0x00, 0xb0, 0x00]), // Box size
     Buffer.from("mdat"),
-    Buffer.alloc(45040, 0x00), // Audio data
+    Buffer.alloc(45040, 0x00),
   ]);
 
   return Buffer.concat([ftypBox, mdatBox]);
+}
+
+// Helper function to create valid Opus file
+function createValidOpus(): Buffer {
+  const opusOggPage = Buffer.concat([
+    Buffer.from("OggS"), // Capture pattern
+    Buffer.from([0x00]), // Version
+    Buffer.from([0x02]), // BOS flag
+    Buffer.alloc(8, 0x00), // Granule position
+    Buffer.alloc(4, 0x01), // Serial number
+    Buffer.alloc(4, 0x00), // Sequence number
+    Buffer.alloc(4, 0x00), // Checksum
+    Buffer.from([0x01]), // Page segments
+    Buffer.from([0x08]), // Segment size
+    Buffer.from("OpusHead"), // Opus identification
+  ]);
+
+  const audioData = Buffer.alloc(65536, 0x00);
+  return Buffer.concat([opusOggPage, audioData]);
 }
 
 interface DownloadRequest {
