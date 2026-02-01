@@ -16,7 +16,8 @@ function createValidMP3(): Buffer {
 
   // MP3 frame header for 320 kbps, 44.1kHz, no CRC, no padding
   const frameHeader = Buffer.from([
-    0xff, 0xfb, // Sync
+    0xff,
+    0xfb, // Sync
     0x90, // MPEG1 Layer3, 320kbps
     0x00, // 44.1kHz, no padding, no private bit
   ]);
@@ -64,7 +65,8 @@ function createValidWAV(): Buffer {
   const frequency = 440; // A4 note
 
   for (let i = 0; i < numSamples; i++) {
-    const sample = Math.sin((2 * Math.PI * frequency * i) / sampleRate) * 32767 * 0.3;
+    const sample =
+      Math.sin((2 * Math.PI * frequency * i) / sampleRate) * 32767 * 0.3;
     const int16 = Math.round(sample);
 
     // Write to both channels
@@ -166,7 +168,11 @@ function createValidAAC(): Buffer {
   let offset = 0;
 
   // Create multiple ADTS frames
-  for (let frameNum = 0; frameNum < 4000 && offset < adtsFrames.length - 8; frameNum++) {
+  for (
+    let frameNum = 0;
+    frameNum < 4000 && offset < adtsFrames.length - 8;
+    frameNum++
+  ) {
     // ADTS header (7 bytes minimum)
     adtsFrames[offset++] = 0xff; // Sync word (11 bits)
     adtsFrames[offset++] = 0xf1; // Sync word + MPEG4 + no CRC
