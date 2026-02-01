@@ -33,109 +33,134 @@ async function downloadViaCobalt(
   audioOnly: boolean,
   quality?: string,
 ): Promise<{ buffer: Buffer; filename: string }> {
-  console.log(`[Cobalt] Requesting: ${url} (audioOnly: ${audioOnly})`);
+  console.log(`[Cobalt] Starting download for: ${url}`);
 
   const cobaltUrl = "https://api.cobalt.tools/api/json";
 
   try {
-    const requestPayload = {
+    // Build request payload - keep it simple for better compatibility
+    const requestPayload: any = {
       url: url,
       downloadMode: audioOnly ? "audio" : "video",
-      audioFormat: audioOnly ? "mp3" : "mp4",
-      audioQuality: audioOnly ? parseInt(quality || "320") : undefined,
-      videoQuality: !audioOnly ? parseInt(quality || "720") : undefined,
       isAudioOnly: audioOnly,
     };
 
-    console.log("[Cobalt] Payload:", JSON.stringify(requestPayload));
+    // Only add optional fields if they have values
+    if (audioOnly && quality) {
+      requestPayload.audioQuality = parseInt(quality) || 320;
+    }
+
+    console.log(`[Cobalt] Sending request to ${cobaltUrl}`);
 
     const response = await fetch(cobaltUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "User-Agent": "SunsetDownloader/1.0",
       },
       body: JSON.stringify(requestPayload),
-      signal: AbortSignal.timeout(30000), // 30 second timeout
+      signal: AbortSignal.timeout(45000), // 45 second timeout
     });
 
-    console.log("[Cobalt] Response status:", response.status);
+    console.log(`[Cobalt] Response status: ${response.status}`);
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("[Cobalt] Error response:", errorText);
-      throw new Error(`Cobalt API error: ${response.status} - ${errorText}`);
+      const errorText = await response.text().catch(() => "No error text");
+      console.error(`[Cobalt] HTTP Error: ${response.status} - ${errorText}`);
+      throw new Error(
+        `API returned ${response.status}. This platform might be temporarily unavailable.`
+      );
     }
 
     const data = (await response.json()) as any;
-    console.log(
-      "[Cobalt] Response data:",
-      JSON.stringify(data).substring(0, 200),
-    );
 
-    if (data.status === "error") {
+    // Check for API-level errors
+    if (data.status === "error" || data.error) {
       const errorMsg =
-        data.error?.message || JSON.stringify(data.error) || "Unknown error";
-      console.error("[Cobalt] API error:", errorMsg);
-      throw new Error(`Cobalt error: ${errorMsg}`);
+        data.error?.message ||
+        data.error ||
+        JSON.stringify(data.error) ||
+        "Unknown API error";
+      console.error(`[Cobalt] API error: ${errorMsg}`);
+      throw new Error(`Platform error: ${errorMsg}`);
     }
 
+    // Check if we got a URL back
     if (!data.url) {
-      console.error("[Cobalt] No URL in response:", JSON.stringify(data));
-      throw new Error("No download URL returned from Cobalt API");
+      console.error(`[Cobalt] No URL in response. Full response:`, data);
+      throw new Error(
+        "Could not get download link. The content might be unavailable or private."
+      );
     }
 
-    console.log("[Cobalt] Download URL received, fetching file...");
+    console.log(`[Cobalt] Got download URL, fetching file...`);
 
-    // Download the file from the URL provided by Cobalt
+    // Fetch the actual media file
     const fileResponse = await fetch(data.url, {
       headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "User-Agent": "SunsetDownloader/1.0",
       },
-      signal: AbortSignal.timeout(30000),
+      signal: AbortSignal.timeout(45000),
     });
 
-    console.log("[Cobalt] File response status:", fileResponse.status);
+    console.log(`[Cobalt] File response status: ${fileResponse.status}`);
 
     if (!fileResponse.ok) {
-      throw new Error(`Failed to download file: ${fileResponse.status}`);
+      throw new Error(
+        `Failed to download file: ${fileResponse.status}. Try again in a moment.`
+      );
     }
+
+    const contentType = fileResponse.headers.get("content-type");
+    console.log(`[Cobalt] Content-Type: ${contentType}`);
 
     const buffer = await fileResponse.arrayBuffer();
-    console.log("[Cobalt] File downloaded, size:", buffer.byteLength);
 
     if (buffer.byteLength === 0) {
-      throw new Error("Downloaded file is empty");
+      throw new Error("Downloaded file is empty. Please try again.");
     }
 
-    const filename =
-      data.filename || `media_${Date.now()}.${audioOnly ? "mp3" : "mp4"}`;
+    console.log(`[Cobalt] File downloaded successfully: ${buffer.byteLength} bytes`);
+
+    // Generate filename - use provided filename or create one
+    let filename = data.filename || `media_${Date.now()}`;
+
+    // Ensure it has the right extension
+    const extension = audioOnly ? "mp3" : "mp4";
+    if (!filename.endsWith(`.${extension}`)) {
+      filename = `${filename}.${extension}`;
+    }
 
     return {
       buffer: Buffer.from(buffer),
       filename: filename,
     };
   } catch (error) {
-    console.error("[Cobalt] Error details:", error);
+    console.error(`[Cobalt] Exception:`, error);
     throw error;
   }
 }
 
 export async function handler(event: any) {
-  console.log("[Handler] Request received");
+  console.log("[Handler] Download request received");
 
   try {
-    const body = JSON.parse(event.body || "{}") as DownloadRequest;
+    // Parse request
+    let body: DownloadRequest;
+    try {
+      body = JSON.parse(event.body || "{}") as DownloadRequest;
+    } catch (e) {
+      console.error("[Handler] Failed to parse request body:", e);
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "Invalid request format" }),
+      };
+    }
+
     const { url, platform, quality, audioOnly } = body;
 
-    console.log("[Handler] Parsed request:", {
-      url,
-      platform,
-      quality,
-      audioOnly,
-    });
+    console.log(`[Handler] URL: ${url}`);
+    console.log(`[Handler] Platform: ${platform}, Quality: ${quality}, AudioOnly: ${audioOnly}`);
 
     // Validate URL
     if (!url || typeof url !== "string" || !url.trim()) {
@@ -145,24 +170,24 @@ export async function handler(event: any) {
       };
     }
 
-    // Normalize and validate URL
+    // Normalize URL
     let normalizedUrl: string;
     try {
       normalizedUrl = normalizeUrl(url);
-      console.log("[Handler] Normalized URL:", normalizedUrl);
+      console.log(`[Handler] Normalized URL: ${normalizedUrl}`);
     } catch (e) {
-      console.error("[Handler] URL normalization error:", e);
+      console.error(`[Handler] URL normalization failed:`, e);
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: "Invalid URL format" }),
+        body: JSON.stringify({ error: "Invalid URL format. Please check and try again." }),
       };
     }
 
+    // Validate URL
     if (!isValidUrl(normalizedUrl)) {
-      console.error("[Handler] URL validation failed");
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: "Invalid URL format" }),
+        body: JSON.stringify({ error: "URL is not valid. Please check and try again." }),
       };
     }
 
@@ -170,30 +195,32 @@ export async function handler(event: any) {
     let detectedPlatform = platform;
     if (!detectedPlatform) {
       detectedPlatform = detectPlatform(normalizedUrl);
-      console.log("[Handler] Detected platform:", detectedPlatform);
     }
+
+    console.log(`[Handler] Detected platform: ${detectedPlatform}`);
 
     if (!detectedPlatform || !SUPPORTED_PLATFORMS.includes(detectedPlatform)) {
       return {
         statusCode: 400,
         body: JSON.stringify({
-          error: `Unsupported platform. Supported: ${SUPPORTED_PLATFORMS.join(", ")}`,
+          error: `Platform not supported. Supported: ${SUPPORTED_PLATFORMS.join(", ")}`,
         }),
       };
     }
 
-    console.log("[Handler] Starting download via Cobalt...");
+    console.log(`[Handler] Starting Cobalt download...`);
 
-    // Use Cobalt API for all platforms
+    // Download via Cobalt
     const { buffer, filename } = await downloadViaCobalt(
       normalizedUrl,
       audioOnly || false,
       quality,
     );
 
+    // Convert to base64
     const base64 = buffer.toString("base64");
 
-    console.log("[Handler] Download successful, returning file");
+    console.log(`[Handler] Download successful! File: ${filename}, Size: ${buffer.length}`);
 
     return {
       statusCode: 200,
@@ -207,35 +234,28 @@ export async function handler(event: any) {
       isBase64Encoded: true,
     };
   } catch (error: any) {
-    console.error("[Handler] Error:", error);
+    console.error("[Handler] Download failed:", error);
 
-    let errorMessage = "Failed to download media";
-    const errorStr = (error.message || "").toLowerCase();
+    let userMessage =
+      error.message || "Failed to download. Please try again in a moment.";
 
-    if (errorStr.includes("private") || errorStr.includes("authentication")) {
-      errorMessage =
-        "This content requires authentication or is not publicly available.";
-    } else if (
-      errorStr.includes("unavailable") ||
-      errorStr.includes("removed")
-    ) {
-      errorMessage =
-        "This content is unavailable or has been removed. Please check the link.";
-    } else if (errorStr.includes("404")) {
-      errorMessage = "The content could not be found. Please check the URL.";
-    } else if (errorStr.includes("age")) {
-      errorMessage = "This content is age-restricted. Please verify access.";
-    } else if (errorStr.includes("timeout")) {
-      errorMessage = "Download timed out. Please try again.";
-    } else if (errorStr.includes("empty")) {
-      errorMessage = "No content found to download.";
+    // Provide more specific error messages
+    if (userMessage.includes("timeout")) {
+      userMessage = "Download took too long. Please try again.";
+    } else if (userMessage.includes("empty")) {
+      userMessage = "The content appears to be empty or unavailable.";
+    } else if (userMessage.includes("private")) {
+      userMessage = "This content is private or requires authentication.";
+    } else if (userMessage.includes("404")) {
+      userMessage = "Content not found. Check the URL and try again.";
+    } else if (userMessage.includes("403")) {
+      userMessage = "Access denied. This content may be restricted.";
     }
 
     return {
       statusCode: 400,
       body: JSON.stringify({
-        error: errorMessage,
-        details: error.message,
+        error: userMessage,
       }),
     };
   }
