@@ -180,7 +180,7 @@ export const handleDownload: RequestHandler = async (req, res) => {
     res.send(Buffer.from(buffer));
   } catch (error) {
     console.error("[Download] Exception:", error);
-    return res.status(400).json({ error: "Download failed" });
+    return res.status(400).json({ error: "Download failed. Please try again." });
   }
 };
 
