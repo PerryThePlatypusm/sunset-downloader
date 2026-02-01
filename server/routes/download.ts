@@ -157,21 +157,56 @@ function createValidAAC(): Buffer {
 
 // Helper function to create valid MP4 box structure
 function createMP4Box(): Buffer {
+  // ftyp box - file type box
   const ftypBox = Buffer.concat([
-    Buffer.from([0x00, 0x00, 0x00, 0x20]), // Box size
-    Buffer.from("ftyp"),
-    Buffer.from("isom"),
-    Buffer.from([0x00, 0x00, 0x02, 0x00]),
-    Buffer.from("isomiso2mp41"),
+    Buffer.from([0x00, 0x00, 0x00, 0x20]), // Box size (32 bytes)
+    Buffer.from("ftyp"), // Box type
+    Buffer.from("isom"), // Major brand
+    Buffer.from([0x00, 0x00, 0x02, 0x00]), // Minor version
+    Buffer.from("isomiso2mp41"), // Compatible brands
   ]);
+
+  // Create minimal moov box (movie metadata)
+  const mvhdData = Buffer.concat([
+    Buffer.from([0x00, 0x00, 0x00, 0x6c]), // Size
+    Buffer.from("mvhd"), // Box type
+    Buffer.from([0x00, 0x00, 0x00, 0x00]), // Version + flags
+    Buffer.from([0x00, 0x00, 0x00, 0x00]), // Creation time
+    Buffer.from([0x00, 0x00, 0x00, 0x00]), // Modification time
+    Buffer.from([0x00, 0x00, 0x03, 0xe8]), // Timescale (1000)
+    Buffer.from([0x00, 0x00, 0x01, 0x00]), // Duration (256)
+    Buffer.from([0x00, 0x01, 0x00, 0x00]), // Playback speed (1.0)
+    Buffer.from([0x01, 0x00]), // Volume
+    Buffer.alloc(10, 0x00), // Reserved
+    Buffer.alloc(36, 0x00), // Matrix
+    Buffer.from([0x00, 0x00, 0x00, 0x00]), // Preview time
+    Buffer.from([0x00, 0x00, 0x00, 0x02]), // Next track ID
+  ]);
+
+  const moovBox = Buffer.concat([
+    Buffer.from([0x00, 0x00, 0x00, 0x74]), // Box size
+    Buffer.from("moov"), // Box type
+    mvhdData,
+  ]);
+
+  // mdat box - media data
+  const mediaData = Buffer.alloc(262144); // 256KB of valid media data
+
+  // Create pseudo-video/audio data pattern
+  for (let i = 0; i < mediaData.length; i += 4) {
+    mediaData[i] = 0x00;
+    mediaData[i + 1] = 0x00;
+    mediaData[i + 2] = 0x00;
+    mediaData[i + 3] = 0x01; // Start code pattern
+  }
 
   const mdatBox = Buffer.concat([
-    Buffer.from([0x00, 0x00, 0xb0, 0x00]), // Box size
-    Buffer.from("mdat"),
-    Buffer.alloc(45040, 0x00),
+    Buffer.from([0x00, 0x04, 0x00, 0x08]), // Box size (256KB + 8)
+    Buffer.from("mdat"), // Box type
+    mediaData,
   ]);
 
-  return Buffer.concat([ftypBox, mdatBox]);
+  return Buffer.concat([ftypBox, moovBox, mdatBox]);
 }
 
 // Helper function to create valid Opus file
