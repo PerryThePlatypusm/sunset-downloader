@@ -180,26 +180,53 @@ export const handleDownload: RequestHandler = async (req, res) => {
     }
 
     // Find the downloaded file
-    const files = fs.readdirSync(TEMP_DIR);
-    const downloadedFile = files.find(
-      (f) => f.startsWith(`download_${timestamp}_`) && !f.startsWith("."),
-    );
+    let downloadedFile: string | undefined;
+    try {
+      const files = fs.readdirSync(TEMP_DIR);
+      downloadedFile = files.find(
+        (f) => f.startsWith(`download_${timestamp}_`) && !f.startsWith("."),
+      );
+    } catch (error) {
+      console.error("Error reading temp directory:", error);
+      return res.status(500).json({
+        error: "Failed to access temporary directory",
+        details: String(error),
+      });
+    }
 
     if (!downloadedFile) {
+      console.error(`File not found in ${TEMP_DIR}`);
+      console.error("Available files:", fs.readdirSync(TEMP_DIR));
       return res.status(500).json({
         error: "Download completed but file not found",
+        debug: "Check server logs for details",
       });
     }
 
     tempFile = path.join(TEMP_DIR, downloadedFile);
-    const fileStats = fs.statSync(tempFile);
-
-    if (fileStats.size === 0) {
-      fs.unlinkSync(tempFile);
-      return res.status(400).json({
-        error: "Downloaded file is empty",
+    let fileStats: fs.Stats;
+    try {
+      fileStats = fs.statSync(tempFile);
+    } catch (error) {
+      console.error("Error accessing file:", error);
+      return res.status(500).json({
+        error: "Downloaded file exists but cannot be accessed",
+        details: String(error),
       });
     }
+
+    if (fileStats.size === 0) {
+      try {
+        fs.unlinkSync(tempFile);
+      } catch {
+        // Ignore cleanup errors
+      }
+      return res.status(400).json({
+        error: "Downloaded file is empty. The source might not have content.",
+      });
+    }
+
+    console.log(`Download successful: ${fileName} (${fileStats.size} bytes)`);
 
     // Determine MIME type
     const mimeType = audioOnly ? "audio/mpeg" : "video/mp4";
