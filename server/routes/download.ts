@@ -130,7 +130,9 @@ export const handleDownload: RequestHandler = async (req, res) => {
     command += ` "${normalizedUrl}"`;
     command += ` --quiet --no-warnings`;
 
-    console.log(`Starting download: ${detectedPlatform} (${audioOnly ? "audio" : "video"})`);
+    console.log(
+      `Starting download: ${detectedPlatform} (${audioOnly ? "audio" : "video"})`,
+    );
     console.log(`Command: ${command.substring(0, 100)}...`);
 
     // Execute download with better error handling
@@ -156,7 +158,8 @@ export const handleDownload: RequestHandler = async (req, res) => {
         return res.status(503).json({
           error: "yt-dlp is not installed on this server",
           details: "yt-dlp binary not found in system PATH",
-          instruction: "Run: pip install yt-dlp (then ensure it's in your PATH)",
+          instruction:
+            "Run: pip install yt-dlp (then ensure it's in your PATH)",
           platform: process.platform,
         });
       }
