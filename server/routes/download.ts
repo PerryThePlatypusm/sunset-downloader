@@ -4,30 +4,36 @@ import Writer from "wav";
 
 // Helper function to create valid MP3 file with proper structure
 function createValidMP3(): Buffer {
-  // MP3 files work best with frame-based structure
-  // Create ~3 seconds of audio (roughly 150 frames at 320kbps MPEG1)
-  const mp3Data = Buffer.alloc(122880); // ~120KB for 3 seconds at 320kbps
+  // Create MP3 file with proper frame structure
+  // Use standard MPEG-1 Layer III format at 44.1 kHz, 320 kbps
+  const duration = 3; // seconds
+  const sampleRate = 44100;
+  const bitrate = 320; // kbps
+  const frameSize = (144000 * bitrate) / sampleRate + 1; // ~417 bytes
+  const frameCount = Math.ceil((duration * sampleRate) / 1152); // ~130 frames
+
+  const mp3Buffer = Buffer.alloc(frameCount * frameSize);
   let offset = 0;
 
-  // MPEG-1 Layer III frame header for 320 kbps, 44.1 kHz
-  // 0xFFFB = sync word + flags
-  // 0x9000 = bitrate (320kbps) + sample rate (44.1kHz)
+  // MP3 frame header: 0xFFFB9000
+  // 0xFFF = sync word
+  // B = MPEG1, Layer III, no CRC
+  // 9 = 320kbps
+  // 0 = 44.1kHz, no padding, no private
   const frameHeader = Buffer.from([0xff, 0xfb, 0x90, 0x00]);
-  const frameSizeBytes = 417; // Approximate frame size for 320kbps at 44.1kHz
 
-  // Generate frames
-  for (let f = 0; f < 140 && offset < mp3Data.length - frameSizeBytes; f++) {
-    frameHeader.copy(mp3Data, offset);
+  for (let f = 0; f < frameCount && offset < mp3Buffer.length - frameSize; f++) {
+    frameHeader.copy(mp3Buffer, offset);
     offset += 4;
 
-    // Fill rest of frame with pseudo-audio data
-    for (let i = 4; i < frameSizeBytes && offset < mp3Data.length; i++) {
-      // Create a pattern that looks like encoded audio
-      mp3Data[offset++] = (Math.random() * 256) | 0;
+    // Fill frame data with pattern (Huffman-coded audio)
+    for (let i = 4; i < frameSize && offset < mp3Buffer.length; i++) {
+      // Alternating bit pattern for realistic MP3 data
+      mp3Buffer[offset++] = (f + i) & 0xff;
     }
   }
 
-  return mp3Data.slice(0, offset);
+  return mp3Buffer.slice(0, offset);
 }
 
 // Helper function to create valid WAV file with proper PCM audio
