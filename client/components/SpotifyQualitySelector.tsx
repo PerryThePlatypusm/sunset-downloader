@@ -183,18 +183,13 @@ export default function SpotifyQualitySelector({
             </p>
             <p className="text-sunset-400 text-xs">
               ✓ Desktop: VLC
-              {selectedQuality.format === "MP3" &&
-                " • Windows Media Player"}
-              {selectedQuality.format === "M4A" &&
-                " • Windows Media Player"}
-              {selectedQuality.format === "FLAC" &&
-                " • Windows Media Player"}
-              {selectedQuality.format === "WAV" &&
-                " • Windows Media Player"}
+              {selectedQuality.format === "MP3" && " • Windows Media Player"}
+              {selectedQuality.format === "M4A" && " • Windows Media Player"}
+              {selectedQuality.format === "FLAC" && " • Windows Media Player"}
+              {selectedQuality.format === "WAV" && " • Windows Media Player"}
             </p>
             <p className="text-sunset-300 text-xs">
-              📱 Mobile:{" "}
-              {(selectedQuality as any).mobile || "Check device"}
+              📱 Mobile: {(selectedQuality as any).mobile || "Check device"}
             </p>
           </>
         )}
