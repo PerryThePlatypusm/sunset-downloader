@@ -61,18 +61,24 @@ export const handleDownload: RequestHandler = async (req, res) => {
       });
     }
 
-    // Send RAW URL directly to Cobalt - don't normalize it
-    const cobaltUrl = "https://api.cobalt.tools/api/json";
+    // Send URL to FastSaverAPI
+    const fastSaverUrl = "https://api.fastsaverapi.com/download";
+    const token = process.env.FASTSAVER_API_TOKEN;
+
+    if (!token) {
+      console.error("[Download] FastSaverAPI token not configured");
+      return res.status(500).json({ error: "API token not configured" });
+    }
 
     const requestPayload = {
-      url: url, // Use raw URL
-      downloadMode: audioOnly ? "audio" : "video",
+      url: url,
+      token: token,
     };
 
-    console.log("[Download] Sending to Cobalt");
-    console.log("[Download] URL being sent:", requestPayload.url);
+    console.log("[Download] Sending to FastSaverAPI");
+    console.log("[Download] URL being sent:", url);
 
-    const response = await fetch(cobaltUrl, {
+    const response = await fetch(fastSaverUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -81,30 +87,30 @@ export const handleDownload: RequestHandler = async (req, res) => {
       signal: AbortSignal.timeout(60000),
     });
 
-    console.log("[Download] Cobalt response status:", response.status);
+    console.log("[Download] FastSaverAPI response status:", response.status);
 
     const responseText = await response.text();
     console.log(
-      "[Download] Cobalt response (first 300 chars):",
+      "[Download] FastSaverAPI response (first 300 chars):",
       responseText.substring(0, 300),
     );
 
     if (!response.ok) {
-      console.error("[Download] Cobalt HTTP error:", response.status);
-      console.error("[Download] Cobalt error response:", responseText);
+      console.error("[Download] FastSaverAPI HTTP error:", response.status);
+      console.error("[Download] FastSaverAPI error response:", responseText);
 
       // Try to parse error from response
       try {
         const errorData = JSON.parse(responseText);
-        if (errorData.error?.message) {
-          return res.status(400).json({ error: errorData.error.message });
+        if (errorData.error) {
+          return res.status(400).json({ error: errorData.error });
         }
       } catch (e) {
         // Ignore parse errors
       }
 
       return res.status(400).json({
-        error: "URL not recognized by download service",
+        error: "Download service error",
       });
     }
 
@@ -122,17 +128,9 @@ export const handleDownload: RequestHandler = async (req, res) => {
     );
 
     // Check for API errors
-    if (data.status === "error") {
-      const errorMsg = data.error?.message || "Download failed";
-      console.error("[Download] API error:", errorMsg);
-      return res.status(400).json({ error: errorMsg });
-    }
-
     if (data.error) {
-      console.error("[Download] Error in response:", data.error);
-      return res
-        .status(400)
-        .json({ error: data.error.message || "Download failed" });
+      console.error("[Download] API error:", data.error);
+      return res.status(400).json({ error: data.error });
     }
 
     // Get download URL
@@ -143,7 +141,7 @@ export const handleDownload: RequestHandler = async (req, res) => {
       });
     }
 
-    console.log("[Download] Got media URL from Cobalt");
+    console.log("[Download] Got media URL from FastSaverAPI");
 
     // Fetch the actual media file
     const fileResponse = await fetch(data.url, {
