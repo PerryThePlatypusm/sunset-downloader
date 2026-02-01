@@ -45,10 +45,10 @@ const QUALITY_MAP: Record<string, string> = {
   "256": "worseaudio",
   "320": "bestaudio",
   // Lossless audio
-  "flac": "bestaudio",
-  "alac": "bestaudio",
-  "lossless": "bestaudio",
-  "highest": "bestaudio",
+  flac: "bestaudio",
+  alac: "bestaudio",
+  lossless: "bestaudio",
+  highest: "bestaudio",
 };
 
 // Temporary directory for downloads
@@ -110,7 +110,10 @@ export const handleDownload: RequestHandler = async (req, res) => {
 
     // Generate temp filename
     const timestamp = Date.now();
-    const outputTemplate = path.join(TEMP_DIR, `download_${timestamp}_%(title)s.%(ext)s`);
+    const outputTemplate = path.join(
+      TEMP_DIR,
+      `download_${timestamp}_%(title)s.%(ext)s`,
+    );
 
     // Build yt-dlp command
     let command = `yt-dlp`;
@@ -133,7 +136,10 @@ export const handleDownload: RequestHandler = async (req, res) => {
       console.error("yt-dlp error:", error.message);
 
       // Check if yt-dlp is installed
-      if (error.message.includes("not found") || error.message.includes("ENOENT")) {
+      if (
+        error.message.includes("not found") ||
+        error.message.includes("ENOENT")
+      ) {
         return res.status(503).json({
           error: "yt-dlp is not installed on this server",
           details: "Please install yt-dlp to enable downloads",
@@ -150,7 +156,7 @@ export const handleDownload: RequestHandler = async (req, res) => {
     // Find the downloaded file
     const files = fs.readdirSync(TEMP_DIR);
     const downloadedFile = files.find(
-      (f) => f.startsWith(`download_${timestamp}_`) && !f.startsWith(".")
+      (f) => f.startsWith(`download_${timestamp}_`) && !f.startsWith("."),
     );
 
     if (!downloadedFile) {
@@ -171,7 +177,9 @@ export const handleDownload: RequestHandler = async (req, res) => {
 
     // Determine MIME type
     const mimeType = audioOnly ? "audio/mpeg" : "video/mp4";
-    const fileName = downloadedFile.replace(`download_${timestamp}_`, "").replace(/\.\w+$/, `.${outputFormat}`);
+    const fileName = downloadedFile
+      .replace(`download_${timestamp}_`, "")
+      .replace(/\.\w+$/, `.${outputFormat}`);
 
     // Stream file
     res.setHeader("Content-Type", mimeType);

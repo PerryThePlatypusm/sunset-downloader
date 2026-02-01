@@ -92,7 +92,8 @@ export async function handler(event: any) {
     return {
       statusCode: 400,
       body: JSON.stringify({
-        error: "Actual downloading requires local deployment. Use the local version for real downloads.",
+        error:
+          "Actual downloading requires local deployment. Use the local version for real downloads.",
         info: "yt-dlp is configured on the local server. Deploy locally to use actual downloading.",
       }),
     };

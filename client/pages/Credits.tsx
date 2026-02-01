@@ -319,18 +319,28 @@ export default function Credits() {
                   <div className="space-y-2 text-sunset-400 text-sm">
                     <div>
                       <p className="font-semibold text-sunset-300">Lossless:</p>
-                      <p className="ml-2">• FLAC - Lossless compression (highest quality)</p>
-                      <p className="ml-2">• ALAC (M4A) - Apple Lossless (highest quality)</p>
+                      <p className="ml-2">
+                        • FLAC - Lossless compression (highest quality)
+                      </p>
+                      <p className="ml-2">
+                        • ALAC (M4A) - Apple Lossless (highest quality)
+                      </p>
                     </div>
                     <div>
-                      <p className="font-semibold text-sunset-300 mt-2">Compressed:</p>
+                      <p className="font-semibold text-sunset-300 mt-2">
+                        Compressed:
+                      </p>
                       <p className="ml-2">• MP3 - 128 kbps to 320 kbps</p>
-                      <p className="ml-2">• AAC (M4A) - Advanced Audio Coding</p>
+                      <p className="ml-2">
+                        • AAC (M4A) - Advanced Audio Coding
+                      </p>
                       <p className="ml-2">• OGG Vorbis - Open-source format</p>
                       <p className="ml-2">• Opus - Modern codec</p>
                     </div>
                     <div>
-                      <p className="font-semibold text-sunset-300 mt-2">Uncompressed:</p>
+                      <p className="font-semibold text-sunset-300 mt-2">
+                        Uncompressed:
+                      </p>
                       <p className="ml-2">• WAV (RIFF PCM) - Raw audio data</p>
                     </div>
                   </div>
@@ -352,14 +362,21 @@ export default function Credits() {
                 </div>
               </div>
               <div className="mt-4 p-4 bg-sunset-500/10 border border-sunset-500/30 rounded-lg">
-                <p className="text-sunset-200 font-semibold mb-2">✨ Platform Support</p>
+                <p className="text-sunset-200 font-semibold mb-2">
+                  ✨ Platform Support
+                </p>
                 <p className="text-sunset-300 text-sm">
-                  Real media downloads from <span className="font-bold text-sunset-100">1000+ platforms</span> powered by yt-dlp,
-                  including YouTube, Spotify, Instagram, TikTok, Twitter, SoundCloud, Twitch,
-                  Crunchyroll, and hundreds more. Downloads stream directly from source platforms
-                  in MP3 (audio) or MP4 (video) format with full lossless audio support available
-                  for compatible sources. Universal compatibility guaranteed across Windows Media
-                  Player, VLC, iOS, Android, macOS, and all modern browsers.
+                  Real media downloads from{" "}
+                  <span className="font-bold text-sunset-100">
+                    1000+ platforms
+                  </span>{" "}
+                  powered by yt-dlp, including YouTube, Spotify, Instagram,
+                  TikTok, Twitter, SoundCloud, Twitch, Crunchyroll, and hundreds
+                  more. Downloads stream directly from source platforms in MP3
+                  (audio) or MP4 (video) format with full lossless audio support
+                  available for compatible sources. Universal compatibility
+                  guaranteed across Windows Media Player, VLC, iOS, Android,
+                  macOS, and all modern browsers.
                 </p>
               </div>
             </div>

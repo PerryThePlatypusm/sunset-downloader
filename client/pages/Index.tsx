@@ -384,15 +384,25 @@ export default function Index() {
             {/* Info Section */}
             <div className="mt-8 pt-6 border-t border-sunset-700/50 grid grid-cols-2 sm:grid-cols-3 gap-4 text-center">
               <div>
-                <p className="text-sunset-500 font-bold text-lg sm:text-xl">1000+</p>
-                <p className="text-sunset-400 text-xs sm:text-sm">Supported Platforms</p>
+                <p className="text-sunset-500 font-bold text-lg sm:text-xl">
+                  1000+
+                </p>
+                <p className="text-sunset-400 text-xs sm:text-sm">
+                  Supported Platforms
+                </p>
               </div>
               <div>
-                <p className="text-sunset-500 font-bold text-lg sm:text-xl">4K</p>
-                <p className="text-sunset-400 text-xs sm:text-sm">Max Quality</p>
+                <p className="text-sunset-500 font-bold text-lg sm:text-xl">
+                  4K
+                </p>
+                <p className="text-sunset-400 text-xs sm:text-sm">
+                  Max Quality
+                </p>
               </div>
               <div className="col-span-2 sm:col-span-1">
-                <p className="text-sunset-500 font-bold text-lg sm:text-xl">Free</p>
+                <p className="text-sunset-500 font-bold text-lg sm:text-xl">
+                  Free
+                </p>
                 <p className="text-sunset-400 text-xs sm:text-sm">No Account</p>
               </div>
             </div>
@@ -404,7 +414,9 @@ export default function Index() {
               <div className="w-10 sm:w-12 h-10 sm:h-12 bg-sunset-500/20 rounded-lg flex items-center justify-center mb-3">
                 <Zap className="w-5 sm:w-6 h-5 sm:h-6 text-sunset-400" />
               </div>
-              <h3 className="text-white font-bold mb-2 text-sm sm:text-base">Lightning Fast</h3>
+              <h3 className="text-white font-bold mb-2 text-sm sm:text-base">
+                Lightning Fast
+              </h3>
               <p className="text-sunset-300 text-xs sm:text-sm">
                 Download your media in seconds with optimized servers
               </p>
@@ -414,7 +426,9 @@ export default function Index() {
               <div className="w-10 sm:w-12 h-10 sm:h-12 bg-pink-500/20 rounded-lg flex items-center justify-center mb-3">
                 <Video className="w-5 sm:w-6 h-5 sm:h-6 text-pink-400" />
               </div>
-              <h3 className="text-white font-bold mb-2 text-sm sm:text-base">Any Quality</h3>
+              <h3 className="text-white font-bold mb-2 text-sm sm:text-base">
+                Any Quality
+              </h3>
               <p className="text-sunset-300 text-xs sm:text-sm">
                 From 240p all the way up to 4K for maximum clarity
               </p>
@@ -424,7 +438,9 @@ export default function Index() {
               <div className="w-10 sm:w-12 h-10 sm:h-12 bg-orange-500/20 rounded-lg flex items-center justify-center mb-3">
                 <Music className="w-5 sm:w-6 h-5 sm:h-6 text-orange-400" />
               </div>
-              <h3 className="text-white font-bold mb-2 text-sm sm:text-base">Audio Conversion</h3>
+              <h3 className="text-white font-bold mb-2 text-sm sm:text-base">
+                Audio Conversion
+              </h3>
               <p className="text-sunset-300 text-xs sm:text-sm">
                 Extract MP3 from any video in your preferred quality
               </p>
