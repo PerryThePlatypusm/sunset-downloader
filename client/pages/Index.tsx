@@ -400,32 +400,32 @@ export default function Index() {
 
           {/* Feature Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mt-8 sm:mt-12">
-            <div className="bg-gradient-to-br from-sunset-800/30 to-transparent border border-sunset-700/30 rounded-lg p-6 backdrop-blur-sm">
-              <div className="w-12 h-12 bg-sunset-500/20 rounded-lg flex items-center justify-center mb-3">
-                <Zap className="w-6 h-6 text-sunset-400" />
+            <div className="bg-gradient-to-br from-sunset-800/30 to-transparent border border-sunset-700/30 rounded-lg p-4 sm:p-6 backdrop-blur-sm">
+              <div className="w-10 sm:w-12 h-10 sm:h-12 bg-sunset-500/20 rounded-lg flex items-center justify-center mb-3">
+                <Zap className="w-5 sm:w-6 h-5 sm:h-6 text-sunset-400" />
               </div>
-              <h3 className="text-white font-bold mb-2">Lightning Fast</h3>
-              <p className="text-sunset-300 text-sm">
+              <h3 className="text-white font-bold mb-2 text-sm sm:text-base">Lightning Fast</h3>
+              <p className="text-sunset-300 text-xs sm:text-sm">
                 Download your media in seconds with optimized servers
               </p>
             </div>
 
-            <div className="bg-gradient-to-br from-sunset-800/30 to-transparent border border-sunset-700/30 rounded-lg p-6 backdrop-blur-sm">
-              <div className="w-12 h-12 bg-pink-500/20 rounded-lg flex items-center justify-center mb-3">
-                <Video className="w-6 h-6 text-pink-400" />
+            <div className="bg-gradient-to-br from-sunset-800/30 to-transparent border border-sunset-700/30 rounded-lg p-4 sm:p-6 backdrop-blur-sm">
+              <div className="w-10 sm:w-12 h-10 sm:h-12 bg-pink-500/20 rounded-lg flex items-center justify-center mb-3">
+                <Video className="w-5 sm:w-6 h-5 sm:h-6 text-pink-400" />
               </div>
-              <h3 className="text-white font-bold mb-2">Any Quality</h3>
-              <p className="text-sunset-300 text-sm">
-                From 240p all the way up to 8K for maximum clarity
+              <h3 className="text-white font-bold mb-2 text-sm sm:text-base">Any Quality</h3>
+              <p className="text-sunset-300 text-xs sm:text-sm">
+                From 240p all the way up to 4K for maximum clarity
               </p>
             </div>
 
-            <div className="bg-gradient-to-br from-sunset-800/30 to-transparent border border-sunset-700/30 rounded-lg p-6 backdrop-blur-sm">
-              <div className="w-12 h-12 bg-orange-500/20 rounded-lg flex items-center justify-center mb-3">
-                <Music className="w-6 h-6 text-orange-400" />
+            <div className="bg-gradient-to-br from-sunset-800/30 to-transparent border border-sunset-700/30 rounded-lg p-4 sm:p-6 backdrop-blur-sm sm:col-span-2 lg:col-span-1">
+              <div className="w-10 sm:w-12 h-10 sm:h-12 bg-orange-500/20 rounded-lg flex items-center justify-center mb-3">
+                <Music className="w-5 sm:w-6 h-5 sm:h-6 text-orange-400" />
               </div>
-              <h3 className="text-white font-bold mb-2">Audio Conversion</h3>
-              <p className="text-sunset-300 text-sm">
+              <h3 className="text-white font-bold mb-2 text-sm sm:text-base">Audio Conversion</h3>
+              <p className="text-sunset-300 text-xs sm:text-sm">
                 Extract MP3 from any video in your preferred quality
               </p>
             </div>
