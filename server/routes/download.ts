@@ -97,7 +97,9 @@ export const handleDownload: RequestHandler = async (req, res) => {
 
     if (data.status === "error" || !data.url) {
       console.error("[Download] API error:", data);
-      return res.status(400).json({ error: "Could not generate download link" });
+      return res
+        .status(400)
+        .json({ error: "Could not generate download link" });
     }
 
     // Fetch the media file
