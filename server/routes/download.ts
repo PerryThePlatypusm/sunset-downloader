@@ -31,6 +31,7 @@ const SUPPORTED_PLATFORMS = [
 ];
 
 const QUALITY_MAP: Record<string, string> = {
+  // Video qualities
   "240": "worst",
   "360": "worse",
   "480": "worseaudio/worst",
@@ -38,10 +39,16 @@ const QUALITY_MAP: Record<string, string> = {
   "1080": "best[height<=1080]",
   "2160": "best[height<=2160]",
   "4k": "best[height<=2160]",
+  // Audio qualities (bitrates)
   "128": "worst",
   "192": "worseaudio",
   "256": "worseaudio",
   "320": "bestaudio",
+  // Lossless audio
+  "flac": "bestaudio",
+  "alac": "bestaudio",
+  "lossless": "bestaudio",
+  "highest": "bestaudio",
 };
 
 // Temporary directory for downloads
