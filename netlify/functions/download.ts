@@ -209,8 +209,25 @@ function createMP4Box(): Buffer {
   ftypBox.writeUInt32BE(0x00000200, 12); // Minor version
   ftypBox.write("isomiso2mp41", 16); // Compatible brands
 
-  // Create minimal but valid moov box
-  // mvhd (movie header)
+  // Create media data first (will reference in moov)
+  const mediaData = Buffer.alloc(500000); // 500KB of video data
+  let mdatOffset = 0;
+
+  // Write video frame NAL units with start codes
+  for (let frameNum = 0; frameNum < 100 && mdatOffset < mediaData.length - 1000; frameNum++) {
+    // NAL unit start code
+    mediaData[mdatOffset++] = 0x00;
+    mediaData[mdatOffset++] = 0x00;
+    mediaData[mdatOffset++] = 0x00;
+    mediaData[mdatOffset++] = 0x01;
+
+    // Video frame data (pseudo video data)
+    for (let j = 0; j < 4096 && mdatOffset < mediaData.length; j++) {
+      mediaData[mdatOffset++] = (Math.random() * 256) | 0;
+    }
+  }
+
+  // mvhd (movie header) box
   const mvhdBox = Buffer.alloc(108);
   let mvhdOffset = 0;
   mvhdBox.writeUInt32BE(108, mvhdOffset); mvhdOffset += 4; // Box size
@@ -218,8 +235,8 @@ function createMP4Box(): Buffer {
   mvhdBox.writeUInt32BE(0, mvhdOffset); mvhdOffset += 4; // Version and flags
   mvhdBox.writeUInt32BE(0, mvhdOffset); mvhdOffset += 4; // Creation time
   mvhdBox.writeUInt32BE(0, mvhdOffset); mvhdOffset += 4; // Modification time
-  mvhdBox.writeUInt32BE(1000, mvhdOffset); mvhdOffset += 4; // Timescale
-  mvhdBox.writeUInt32BE(10000, mvhdOffset); mvhdOffset += 4; // Duration (10 seconds)
+  mvhdBox.writeUInt32BE(1000, mvhdOffset); mvhdOffset += 4; // Timescale (1000 ticks per second)
+  mvhdBox.writeUInt32BE(5000, mvhdOffset); mvhdOffset += 4; // Duration (5 seconds)
   mvhdBox.writeUInt32BE(0x00010000, mvhdOffset); mvhdOffset += 4; // Playback speed (1.0)
   mvhdBox.writeUInt16BE(0x0100, mvhdOffset); mvhdOffset += 2; // Volume (1.0)
   mvhdOffset += 10; // Reserved
@@ -236,28 +253,58 @@ function createMP4Box(): Buffer {
   mvhdBox.writeUInt32BE(0, mvhdOffset); mvhdOffset += 4; // Preview time
   mvhdBox.writeUInt32BE(2, mvhdOffset); // Next track ID
 
-  const moovBox = Buffer.alloc(16 + 108);
-  let moovOffset = 0;
-  moovBox.writeUInt32BE(16 + 108, moovOffset); moovOffset += 4; // Box size
-  moovBox.write("moov", moovOffset); moovOffset += 4; // Box type
-  mvhdBox.copy(moovBox, moovOffset);
-
-  // mdat box - media data with H.264 NAL units
-  const mediaData = Buffer.alloc(1000000); // 1MB
-  let mdatOffset = 0;
-
-  // Write H.264 NAL unit start codes and data
-  for (let i = 0; i < 1000 && mdatOffset < mediaData.length - 4; i++) {
-    mediaData[mdatOffset++] = 0x00;
-    mediaData[mdatOffset++] = 0x00;
-    mediaData[mdatOffset++] = 0x00;
-    mediaData[mdatOffset++] = 0x01;
-    // NAL unit data
-    for (let j = 0; j < 1000 && mdatOffset < mediaData.length; j++) {
-      mediaData[mdatOffset++] = (Math.random() * 256) | 0;
+  // tkhd (track header) box - minimal track info
+  const tkhdBox = Buffer.alloc(92);
+  let tkhdOffset = 0;
+  tkhdBox.writeUInt32BE(92, tkhdOffset); tkhdOffset += 4; // Box size
+  tkhdBox.write("tkhd", tkhdOffset); tkhdOffset += 4; // Box type
+  tkhdBox.writeUInt32BE(0x0000000f, tkhdOffset); tkhdOffset += 4; // Version and flags
+  tkhdBox.writeUInt32BE(0, tkhdOffset); tkhdOffset += 4; // Creation time
+  tkhdBox.writeUInt32BE(0, tkhdOffset); tkhdOffset += 4; // Modification time
+  tkhdBox.writeUInt32BE(1, tkhdOffset); tkhdOffset += 4; // Track ID
+  tkhdBox.writeUInt32BE(0, tkhdOffset); tkhdOffset += 4; // Reserved
+  tkhdBox.writeUInt32BE(5000, tkhdOffset); tkhdOffset += 4; // Duration
+  tkhdOffset += 8; // Reserved
+  tkhdBox.writeUInt16BE(0, tkhdOffset); tkhdOffset += 2; // Layer
+  tkhdBox.writeUInt16BE(0, tkhdOffset); tkhdOffset += 2; // Alternate group
+  tkhdBox.writeUInt16BE(0x0100, tkhdOffset); tkhdOffset += 2; // Volume
+  tkhdOffset += 2; // Reserved
+  // Matrix
+  for (let i = 0; i < 9; i++) {
+    if (i === 0 || i === 4 || i === 8) {
+      tkhdBox.writeUInt32BE(0x00010000, tkhdOffset);
+    } else {
+      tkhdBox.writeUInt32BE(0, tkhdOffset);
     }
+    tkhdOffset += 4;
   }
+  // Width and height (320x240)
+  tkhdBox.writeUInt32BE(320 << 16, tkhdOffset); tkhdOffset += 4;
+  tkhdBox.writeUInt32BE(240 << 16, tkhdOffset);
 
+  // edts (edit list) box
+  const elstBox = Buffer.alloc(36);
+  elstBox.writeUInt32BE(36, 0); // Box size
+  elstBox.write("elst", 4); // Box type
+  elstBox.writeUInt32BE(0, 8); // Version and flags
+  elstBox.writeUInt32BE(1, 12); // Number of entries
+  elstBox.writeUInt32BE(5000, 16); // Track duration
+  elstBox.writeUInt32BE(0, 20); // Media time
+  elstBox.writeUInt32BE(0x00010000, 24); // Media rate
+
+  const edtsBox = Buffer.alloc(8 + 36);
+  edtsBox.writeUInt32BE(8 + 36, 0);
+  edtsBox.write("edts", 4);
+  elstBox.copy(edtsBox, 8);
+
+  // Combine moov box
+  const moovContents = Buffer.concat([mvhdBox, tkhdBox, edtsBox]);
+  const moovBox = Buffer.alloc(8 + moovContents.length);
+  moovBox.writeUInt32BE(8 + moovContents.length, 0);
+  moovBox.write("moov", 4);
+  moovContents.copy(moovBox, 8);
+
+  // mdat box - media data
   const mdatBox = Buffer.alloc(8 + mdatOffset);
   mdatBox.writeUInt32BE(8 + mdatOffset, 0); // Box size
   mdatBox.write("mdat", 4); // Box type
