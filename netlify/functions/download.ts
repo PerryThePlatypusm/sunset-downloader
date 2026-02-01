@@ -37,34 +37,49 @@ function createValidMP3(): Buffer {
   return Buffer.concat([id3Header, frames]);
 }
 
-// Helper function to create valid WAV file
+// Helper function to create valid WAV file with proper PCM audio
 function createValidWAV(): Buffer {
-  // Create 1 second of silence at 44100Hz, 16-bit stereo
+  // Create 2 seconds of audio at 44100Hz, 16-bit stereo (sine wave)
   const sampleRate = 44100;
-  const numSamples = sampleRate;
-  const bytesPerSample = 4; // 2 channels * 2 bytes
-  const audioData = Buffer.alloc(numSamples * bytesPerSample, 0x00);
+  const numSamples = sampleRate * 2; // 2 seconds
+  const channels = 2;
+  const bitsPerSample = 16;
+  const bytesPerSample = (bitsPerSample / 8) * channels;
 
+  // Create WAV header
   const header = Buffer.concat([
     Buffer.from("RIFF"),
-    Buffer.allocUnsafe(4),
+    Buffer.allocUnsafe(4), // File size - 8
     Buffer.from("WAVE"),
     Buffer.from("fmt "),
     Buffer.from([0x10, 0x00, 0x00, 0x00]), // Subchunk1 size (16)
     Buffer.from([0x01, 0x00]), // Audio format (PCM)
-    Buffer.from([0x02, 0x00]), // Channels (2)
+    Buffer.from([0x02, 0x00]), // Channels (stereo)
     Buffer.from([0x44, 0xac, 0x00, 0x00]), // Sample rate (44100)
     Buffer.from([0x10, 0xb1, 0x02, 0x00]), // Byte rate (176400)
     Buffer.from([0x04, 0x00]), // Block align
     Buffer.from([0x10, 0x00]), // Bits per sample (16)
     Buffer.from("data"),
-    Buffer.allocUnsafe(4),
+    Buffer.allocUnsafe(4), // Subchunk2 size
   ]);
 
-  // Set file size
-  const fileSize = 36 + audioData.length;
-  header.writeUInt32LE(fileSize, 4);
-  header.writeUInt32LE(audioData.length, header.length - 4);
+  // Generate actual PCM audio data (sine wave for validity)
+  const audioData = Buffer.alloc(numSamples * bytesPerSample);
+  const frequency = 440; // A4 note
+
+  for (let i = 0; i < numSamples; i++) {
+    const sample = Math.sin((2 * Math.PI * frequency * i) / sampleRate) * 32767 * 0.3;
+    const int16 = Math.round(sample);
+
+    // Write to both channels
+    audioData.writeInt16LE(int16, i * bytesPerSample);
+    audioData.writeInt16LE(int16, i * bytesPerSample + 2);
+  }
+
+  // Set file sizes
+  const dataSizePos = header.length - 4;
+  header.writeUInt32LE(audioData.length, dataSizePos);
+  header.writeUInt32LE(36 + audioData.length, 4);
 
   return Buffer.concat([header, audioData]);
 }
