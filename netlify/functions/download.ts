@@ -31,7 +31,7 @@ interface DownloadRequest {
 // Cobalt API - Free multi-platform downloader
 async function downloadViaCobalt(
   url: string,
-  audioOnly: boolean
+  audioOnly: boolean,
 ): Promise<Buffer> {
   const cobaltUrl = "https://api.cobalt.tools/api/json";
 
@@ -188,10 +188,7 @@ export async function handler(event: any) {
       let errorMessage = "Failed to download media";
       const errorStr = downloadError.message?.toLowerCase() || "";
 
-      if (
-        errorStr.includes("private") ||
-        errorStr.includes("authentication")
-      ) {
+      if (errorStr.includes("private") || errorStr.includes("authentication")) {
         errorMessage =
           "This content requires authentication or is not publicly available.";
       } else if (
@@ -203,8 +200,7 @@ export async function handler(event: any) {
       } else if (errorStr.includes("404")) {
         errorMessage = "The content could not be found. Please check the URL.";
       } else if (errorStr.includes("age")) {
-        errorMessage =
-          "This content is age-restricted. Please verify access.";
+        errorMessage = "This content is age-restricted. Please verify access.";
       }
 
       return {

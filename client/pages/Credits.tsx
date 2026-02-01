@@ -371,7 +371,9 @@ export default function Credits() {
                     ytdl-core + Cobalt API
                   </span>{" "}
                   on Netlify Functions. Supporting{" "}
-                  <span className="font-bold text-sunset-100">1000+ platforms</span>{" "}
+                  <span className="font-bold text-sunset-100">
+                    1000+ platforms
+                  </span>{" "}
                   including YouTube, Instagram, TikTok, Twitter, Spotify,
                   SoundCloud, Facebook, Twitch, and many more! Downloads in MP3
                   (audio) or MP4 (video) format at any quality level. Built
