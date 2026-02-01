@@ -19,20 +19,6 @@ const SUPPORTED_PLATFORMS = [
   "pinterest",
 ];
 
-const QUALITY_MAP: Record<string, string> = {
-  "240": "worst",
-  "360": "worse",
-  "480": "worseaudio/worst",
-  "720": "best[height<=720]",
-  "1080": "best[height<=1080]",
-  "2160": "best[height<=2160]",
-  "4k": "best[height<=2160]",
-  "128": "worst",
-  "192": "worseaudio",
-  "256": "worseaudio",
-  "320": "bestaudio",
-};
-
 interface DownloadRequest {
   url: string;
   platform?: string;
@@ -87,16 +73,69 @@ export async function handler(event: any) {
       };
     }
 
-    // Note: On Netlify, actual yt-dlp execution would require setup
-    // For now, return a message to use the local version
-    return {
-      statusCode: 400,
-      body: JSON.stringify({
-        error:
-          "Actual downloading requires local deployment. Use the local version for real downloads.",
-        info: "yt-dlp is configured on the local server. Deploy locally to use actual downloading.",
-      }),
-    };
+    // Try to proxy to backend service
+    const backendUrl = process.env.BACKEND_URL || "http://localhost:3000";
+    const apiEndpoint = `${backendUrl}/api/download`;
+
+    try {
+      const response = await fetch(apiEndpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          url: normalizedUrl,
+          platform: detectedPlatform,
+          quality: quality || (audioOnly ? "320" : "720"),
+          audioOnly: audioOnly || false,
+          episodes: event.body?.episodes,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        return {
+          statusCode: response.status,
+          body: JSON.stringify(
+            errorData || { error: `Download service returned ${response.status}` }
+          ),
+        };
+      }
+
+      // Get the file blob
+      const buffer = await response.arrayBuffer();
+      const base64 = Buffer.from(buffer).toString("base64");
+
+      // Get headers from backend response
+      const contentType = response.headers.get("content-type") || "application/octet-stream";
+      const contentDisposition = response.headers.get("content-disposition") || "";
+
+      return {
+        statusCode: 200,
+        headers: {
+          "Content-Type": contentType,
+          "Content-Disposition": contentDisposition,
+          "Access-Control-Allow-Origin": "*",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+        },
+        body: base64,
+        isBase64Encoded: true,
+      };
+    } catch (proxyError) {
+      console.error("Backend proxy error:", proxyError);
+
+      // If backend is unavailable, provide helpful error
+      return {
+        statusCode: 503,
+        body: JSON.stringify({
+          error: "Download service temporarily unavailable",
+          details:
+            "The download backend is not accessible. Please ensure the backend service is running.",
+          instruction:
+            "If running locally, start the development server with 'npm run dev'",
+        }),
+      };
+    }
   } catch (error) {
     console.error("Download error:", error);
     const errorMessage =
