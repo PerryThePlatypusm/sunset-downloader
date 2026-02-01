@@ -208,6 +208,17 @@ export default function Credits() {
                   <ExternalLink className="w-4 h-4 text-sunset-400" />
                 </a>
                 <a
+                  href="https://cobalt.tools"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between p-3 bg-sunset-900/30 hover:bg-sunset-900/50 rounded-lg border border-sunset-700/50 transition-colors group"
+                >
+                  <span className="text-sunset-300 group-hover:text-sunset-100">
+                    Cobalt API
+                  </span>
+                  <ExternalLink className="w-4 h-4 text-sunset-400" />
+                </a>
+                <a
                   href="https://www.netlify.com"
                   target="_blank"
                   rel="noopener noreferrer"
