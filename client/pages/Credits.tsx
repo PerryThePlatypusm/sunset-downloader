@@ -197,35 +197,24 @@ export default function Credits() {
                   Media & Encoding
                 </h4>
                 <a
-                  href="https://github.com/yt-dlp/yt-dlp"
+                  href="https://www.npmjs.com/package/ytdl-core"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-between p-3 bg-sunset-900/30 hover:bg-sunset-900/50 rounded-lg border border-sunset-700/50 transition-colors group"
                 >
                   <span className="text-sunset-300 group-hover:text-sunset-100">
-                    yt-dlp
+                    ytdl-core
                   </span>
                   <ExternalLink className="w-4 h-4 text-sunset-400" />
                 </a>
                 <a
-                  href="https://ffmpeg.org"
+                  href="https://www.netlify.com"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-between p-3 bg-sunset-900/30 hover:bg-sunset-900/50 rounded-lg border border-sunset-700/50 transition-colors group"
                 >
                   <span className="text-sunset-300 group-hover:text-sunset-100">
-                    FFmpeg
-                  </span>
-                  <ExternalLink className="w-4 h-4 text-sunset-400" />
-                </a>
-                <a
-                  href="https://www.npmjs.com/package/yt-dlp-exec"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between p-3 bg-sunset-900/30 hover:bg-sunset-900/50 rounded-lg border border-sunset-700/50 transition-colors group"
-                >
-                  <span className="text-sunset-300 group-hover:text-sunset-100">
-                    yt-dlp-exec
+                    Netlify Functions
                   </span>
                   <ExternalLink className="w-4 h-4 text-sunset-400" />
                 </a>
