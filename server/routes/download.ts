@@ -52,8 +52,8 @@ const QUALITY_MAP: Record<string, string> = {
   highest: "bestaudio",
 };
 
-// Temporary directory for downloads
-const TEMP_DIR = "/tmp/sunset-downloads";
+// Temporary directory for downloads (cross-platform)
+const TEMP_DIR = path.join(os.tmpdir(), "sunset-downloads");
 if (!fs.existsSync(TEMP_DIR)) {
   fs.mkdirSync(TEMP_DIR, { recursive: true });
 }
