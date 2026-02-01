@@ -1,4 +1,5 @@
 import { detectPlatform } from "../../server/utils/urlUtils";
+import ytdl from "ytdl-core";
 
 const SUPPORTED_PLATFORMS = [
   "youtube",
@@ -23,116 +24,56 @@ interface DownloadRequest {
   episodes?: number[];
 }
 
-// Use FastSaverAPI for reliable multi-platform downloading
-async function downloadViaFastSaver(
+// YouTube downloads using ytdl-core
+async function downloadViaYtdl(
   url: string,
   audioOnly: boolean,
 ): Promise<{ buffer: Buffer; filename: string }> {
-  console.log(`[FastSaver] Starting download for: ${url}`);
-  console.log(`[FastSaver] Audio only: ${audioOnly}`);
-
-  const fastSaverUrl = "https://api.fastsaverapi.com/download";
-  const token = process.env.FASTSAVER_API_TOKEN;
-
-  if (!token) {
-    throw new Error("FastSaverAPI token not configured");
-  }
+  console.log(`[ytdl] Starting download for: ${url}`);
+  console.log(`[ytdl] Audio only: ${audioOnly}`);
 
   try {
-    const requestPayload = {
-      url: url,
-      token: token,
-    };
+    const info = await ytdl.getInfo(url);
+    console.log(`[ytdl] Got video info:`, info.videoDetails.title);
 
-    console.log(`[FastSaver] Sending URL:`, url);
-    console.log(`[FastSaver] Request payload:`, JSON.stringify(requestPayload));
-
-    const response = await fetch(fastSaverUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(requestPayload),
-      signal: AbortSignal.timeout(60000),
+    const format = ytdl.chooseFormat(info.formats, {
+      quality: audioOnly ? "highestaudio" : "highest",
     });
 
-    console.log(`[FastSaver] Response status: ${response.status}`);
+    console.log(`[ytdl] Format:`, format.qualityLabel || "audio");
 
-    const responseText = await response.text();
-    console.log(
-      `[FastSaver] Response (first 500 chars):`,
-      responseText.substring(0, 500),
-    );
+    const stream = ytdl.downloadFromInfo(info, { format });
+    const chunks: Buffer[] = [];
 
-    if (!response.ok) {
-      console.error(`[FastSaver] HTTP ${response.status} Error`);
-      console.error(`[FastSaver] Full response:`, responseText);
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    let data: any;
-    try {
-      data = JSON.parse(responseText);
-    } catch (e) {
-      console.error(`[FastSaver] JSON parse error:`, e);
-      console.error(`[FastSaver] Response was:`, responseText);
-      throw new Error("Invalid API response");
-    }
-
-    console.log(
-      `[FastSaver] Parsed data:`,
-      JSON.stringify(data).substring(0, 300),
-    );
-
-    // Check for errors
-    if (data.error) {
-      const msg = data.error || "API error";
-      console.error(`[FastSaver] API error:`, msg);
-      throw new Error(msg);
-    }
-
-    // Get download URL
-    if (!data.url) {
-      console.error(
-        `[FastSaver] Missing URL in response. Data:`,
-        JSON.stringify(data),
-      );
-      throw new Error("No download URL returned");
-    }
-
-    console.log(`[FastSaver] Got download URL, fetching file...`);
-
-    // Fetch the media file
-    const fileResponse = await fetch(data.url, {
-      signal: AbortSignal.timeout(60000),
+    const buffer = await new Promise<Buffer>((resolve, reject) => {
+      stream.on("data", (chunk: Buffer) => {
+        chunks.push(chunk);
+      });
+      stream.on("end", () => {
+        resolve(Buffer.concat(chunks));
+      });
+      stream.on("error", reject);
     });
 
-    console.log(`[FastSaver] File response status: ${fileResponse.status}`);
-
-    if (!fileResponse.ok) {
-      throw new Error(`File fetch failed: ${fileResponse.status}`);
-    }
-
-    const buffer = await fileResponse.arrayBuffer();
-    console.log(`[FastSaver] Downloaded: ${buffer.byteLength} bytes`);
+    console.log(`[ytdl] Downloaded: ${buffer.byteLength} bytes`);
 
     if (buffer.byteLength === 0) {
       throw new Error("Empty file");
     }
 
-    // Get filename
-    let filename = data.filename || `download_${Date.now()}`;
+    // Get filename from video title
+    const title = info.videoDetails.title
+      .replace(/[^\w\s-]/g, "")
+      .slice(0, 100);
     const ext = audioOnly ? "mp3" : "mp4";
-    if (!filename.includes(`.${ext}`)) {
-      filename = `${filename}.${ext}`;
-    }
+    const filename = `${title}.${ext}`;
 
     return {
-      buffer: Buffer.from(buffer),
+      buffer,
       filename,
     };
   } catch (error) {
-    console.error(`[FastSaver] Error:`, error);
+    console.error(`[ytdl] Error:`, error);
     throw error;
   }
 }
@@ -167,7 +108,7 @@ export async function handler(event: any) {
 
     const trimmedUrl = url.trim();
 
-    // Detect platform using RAW URL (no normalization for Cobalt)
+    // Detect platform
     let detectedPlatform = platform || detectPlatform(trimmedUrl);
     console.log("[Handler] Detected platform:", detectedPlatform);
 
@@ -182,8 +123,8 @@ export async function handler(event: any) {
 
     console.log("[Handler] Starting download...");
 
-    // Download using FastSaverAPI
-    const { buffer, filename } = await downloadViaFastSaver(
+    // Download using ytdl-core
+    const { buffer, filename } = await downloadViaYtdl(
       trimmedUrl,
       audioOnly || false,
     );
@@ -209,14 +150,14 @@ export async function handler(event: any) {
     let msg = error.message || "Download failed";
 
     // Friendly errors
-    if (msg.includes("400")) {
-      msg = "Could not download this content. Please check the URL.";
+    if (msg.includes("unavailable") || msg.includes("ENOTFOUND")) {
+      msg = "Video not available. Please try a different link.";
     } else if (msg.includes("timeout")) {
       msg = "Download timed out. Please try again.";
     } else if (msg.includes("Empty")) {
       msg = "No content found.";
-    } else if (msg.includes("token")) {
-      msg = "API configuration error. Please contact support.";
+    } else if (msg.includes("privat")) {
+      msg = "This video is private.";
     }
 
     return {
