@@ -363,17 +363,20 @@ export default function Credits() {
               </div>
               <div className="mt-4 p-4 bg-sunset-500/10 border border-sunset-500/30 rounded-lg">
                 <p className="text-sunset-200 font-semibold mb-2">
-                  🚀 Pure JavaScript Downloading
+                  🚀 Multi-Platform Downloading on Netlify
                 </p>
                 <p className="text-sunset-300 text-sm">
                   Downloads powered by{" "}
-                  <span className="font-bold text-sunset-100">ytdl-core</span> on
-                  Netlify Functions. Currently supporting{" "}
-                  <span className="font-bold text-sunset-100">YouTube</span>{" "}
-                  downloads in MP3 (audio) or MP4 (video) format at any quality
-                  level. Built entirely in JavaScript with no external
-                  dependencies, ensuring fast, reliable downloads that work on
-                  all platforms. Universal compatibility guaranteed across
+                  <span className="font-bold text-sunset-100">
+                    ytdl-core + Cobalt API
+                  </span>{" "}
+                  on Netlify Functions. Supporting{" "}
+                  <span className="font-bold text-sunset-100">1000+ platforms</span>{" "}
+                  including YouTube, Instagram, TikTok, Twitter, Spotify,
+                  SoundCloud, Facebook, Twitch, and many more! Downloads in MP3
+                  (audio) or MP4 (video) format at any quality level. Built
+                  entirely on Netlify with free APIs - no external backends or
+                  servers needed. Universal compatibility guaranteed across
                   Windows Media Player, VLC, iOS, Android, macOS, and all modern
                   browsers.
                 </p>
