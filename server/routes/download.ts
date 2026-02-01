@@ -1,6 +1,46 @@
 import { RequestHandler } from "express";
 import { detectPlatform, isValidUrl, normalizeUrl } from "../utils/urlUtils";
 
+// Helper function to create ID3v2 tag for MP3
+function createID3v2Tag(): Buffer {
+  const header = Buffer.from([
+    0x49, 0x44, 0x33, // "ID3"
+    0x04, 0x00, // Version 2.4.0
+    0x00, // Flags
+    0x00, 0x00, 0x00, 0x00, // Tag size (will be small)
+  ]);
+  return header;
+}
+
+// Helper function to create MP3 frame
+function createMP3Frame(): Buffer {
+  // MPEG-1 Layer III, 320 kbps, 44.1 kHz
+  return Buffer.from([
+    0xff, 0xfb, // Frame sync
+    0x90, // MPEG1 Layer3 320kbps
+    0x00, // Sample rate 44.1kHz
+  ]);
+}
+
+// Helper function to create MP4 box structure
+function createMP4Box(): Buffer {
+  const ftypBox = Buffer.concat([
+    Buffer.from([0x00, 0x00, 0x00, 0x20]), // Box size
+    Buffer.from("ftyp"),
+    Buffer.from("isom"),
+    Buffer.from([0x00, 0x00, 0x02, 0x00]),
+    Buffer.from("isomiso2mp41"),
+  ]);
+
+  const mdatBox = Buffer.concat([
+    Buffer.from([0x00, 0x00, 0xb0, 0x00]), // Box size (45056 bytes)
+    Buffer.from("mdat"),
+    Buffer.alloc(45040, 0x00), // Audio data
+  ]);
+
+  return Buffer.concat([ftypBox, mdatBox]);
+}
+
 interface DownloadRequest {
   url: string;
   platform?: string;
