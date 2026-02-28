@@ -60,7 +60,9 @@ export default function BackgroundAudio() {
           console.log("✓ Audio started after user interaction");
         }
       } catch (error) {
-        console.error("Failed to play audio after interaction:", error);
+        // Silently fail - audio is optional background ambience
+        // Don't report errors since audio may not be available
+        console.log("Audio unavailable - continuing without background audio");
       }
 
       // Remove listeners after first interaction
@@ -80,6 +82,10 @@ export default function BackgroundAudio() {
     };
   }, [isMuted]);
 
+  const handleAudioError = () => {
+    console.warn("Background audio failed to load - falling back gracefully");
+  };
+
   return (
     <audio
       ref={audioRef}
@@ -87,7 +93,9 @@ export default function BackgroundAudio() {
       preload="auto"
       playsInline
       controls={false}
+      onError={handleAudioError}
     >
+      {/* Primary audio source */}
       <source
         src="https://cdn.builder.io/o/assets%2F4b378ef2d6a74fe5a3255c22037cbe5f%2F93eb007787e546abaac3f37dbd052b98?alt=media&token=b6282761-4629-437d-8525-33e931d99bcf&apiKey=4b378ef2d6a74fe5a3255c22037cbe5f"
         type="audio/mpeg"
