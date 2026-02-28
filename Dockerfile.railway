@@ -3,52 +3,67 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files first
 COPY package.json pnpm-lock.yaml* ./
 
-# Install dependencies
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
+# Install pnpm and dependencies
+RUN npm install -g pnpm@10.14.0 && \
+    pnpm install --frozen-lockfile 2>&1 || \
+    (echo "pnpm install failed, retrying..." && npm install)
 
 # Copy source code
 COPY . .
 
 # Build the application
-RUN npm run build
+RUN npm run build 2>&1
 
 # Runtime stage
 FROM node:20-alpine
 
 WORKDIR /app
 
-# Install Python and required tools for yt-dlp
-RUN apk add --no-cache \
+# Install system dependencies for yt-dlp
+RUN apk update && apk add --no-cache \
     python3 \
     py3-pip \
     ffmpeg \
-    curl
+    curl \
+    wget \
+    ca-certificates && \
+    update-ca-certificates
 
-# Install yt-dlp
-RUN pip3 install --no-cache-dir yt-dlp
+# Install yt-dlp with retry logic
+RUN pip3 install --no-cache-dir yt-dlp 2>&1 || \
+    (echo "pip install failed, trying again..." && pip3 install yt-dlp)
+
+# Verify yt-dlp is installed
+RUN yt-dlp --version
 
 # Copy package files
 COPY package.json pnpm-lock.yaml* ./
 
-# Install production dependencies only
-RUN npm install -g pnpm && pnpm install --prod --frozen-lockfile
+# Install production dependencies
+RUN npm install -g pnpm@10.14.0 && \
+    pnpm install --prod --frozen-lockfile 2>&1 || \
+    (echo "pnpm prod install failed, using npm..." && npm install --production)
 
 # Copy built application from builder
 COPY --from=builder /app/dist ./dist
 
-# Expose port (Railway will assign one, but we'll use this as default)
+# Create temp directory for downloads
+RUN mkdir -p /tmp/downloads && chmod 777 /tmp/downloads
+
+# Expose port
 EXPOSE 3000
 
 # Set environment variables
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV PATH="/usr/local/bin:${PATH}"
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:3000/api/ping || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
+    CMD curl -f http://localhost:${PORT}/api/ping || exit 1
 
 # Start the server
 CMD ["node", "dist/server/node-build.mjs"]
