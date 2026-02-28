@@ -12,6 +12,7 @@ import { usePixelAnimation } from "@/hooks/use-pixel-animation";
 import { useConfetti } from "@/hooks/use-confetti";
 import { Download, Music, Video, Zap, Check, AlertCircle } from "lucide-react";
 import { QUALITY_FORMATS } from "@/lib/urlUtils";
+import { getDownloadUrl } from "@/lib/api-config";
 
 export default function Index() {
   const createPixels = usePixelAnimation();
@@ -85,7 +86,7 @@ export default function Index() {
         episodes: selectedEpisodes.length > 0 ? selectedEpisodes : undefined,
       };
 
-      const response = await fetch("/api/download", {
+      const response = await fetch(getDownloadUrl(), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
