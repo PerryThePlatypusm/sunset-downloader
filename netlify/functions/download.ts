@@ -149,15 +149,25 @@ export async function handler(event: any) {
 
     let msg = error.message || "Download failed";
 
-    // Friendly errors
-    if (msg.includes("unavailable") || msg.includes("ENOTFOUND")) {
+    // Friendly error messages
+    if (error.statusCode === 410 || msg.includes("410")) {
+      msg = "Video is not available. It may be deleted, private, or age-restricted.";
+    } else if (error.statusCode === 403 || msg.includes("403")) {
+      msg = "Access denied. This video may be restricted in your region.";
+    } else if (error.statusCode === 404 || msg.includes("404")) {
+      msg = "Video not found. Please check the URL.";
+    } else if (msg.includes("unavailable") || msg.includes("ENOTFOUND")) {
       msg = "Video not available. Please try a different link.";
+    } else if (msg.includes("age")) {
+      msg = "This video is age-restricted and cannot be downloaded.";
+    } else if (msg.includes("privat")) {
+      msg = "This video is private and cannot be downloaded.";
+    } else if (msg.includes("No formats")) {
+      msg = "No downloadable formats available for this video.";
     } else if (msg.includes("timeout")) {
       msg = "Download timed out. Please try again.";
     } else if (msg.includes("Empty")) {
       msg = "No content found.";
-    } else if (msg.includes("privat")) {
-      msg = "This video is private.";
     }
 
     return {

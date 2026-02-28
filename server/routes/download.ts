@@ -111,7 +111,44 @@ export const handleDownload: RequestHandler = async (req, res) => {
     res.send(buffer);
   } catch (error) {
     console.error("[Download] Exception:", error);
-    return res.status(400).json({ error: "Download failed. Please try again." });
+
+    let errorMessage = "Download failed. Please try again.";
+
+    // Handle specific ytdl-core errors
+    if (error instanceof Error) {
+      const err = error as any;
+
+      // 410 - Video not available
+      if (err.statusCode === 410 || error.message.includes("410")) {
+        errorMessage = "Video is not available. It may be deleted, private, or age-restricted.";
+      }
+      // 403 - Video blocked
+      else if (err.statusCode === 403 || error.message.includes("403")) {
+        errorMessage = "Access denied. This video may be restricted in your region.";
+      }
+      // 404 - Video not found
+      else if (err.statusCode === 404 || error.message.includes("404")) {
+        errorMessage = "Video not found. Please check the URL.";
+      }
+      // Video unavailable
+      else if (error.message.includes("unavailable") || error.message.includes("ENOTFOUND")) {
+        errorMessage = "Video not available. Please try a different link.";
+      }
+      // Age restricted
+      else if (error.message.includes("age")) {
+        errorMessage = "This video is age-restricted and cannot be downloaded.";
+      }
+      // Private video
+      else if (error.message.includes("private")) {
+        errorMessage = "This video is private and cannot be downloaded.";
+      }
+      // No formats available
+      else if (error.message.includes("No formats")) {
+        errorMessage = "No downloadable formats available for this video.";
+      }
+    }
+
+    return res.status(400).json({ error: errorMessage });
   }
 };
 
