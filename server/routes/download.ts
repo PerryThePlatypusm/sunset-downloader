@@ -62,89 +62,152 @@ export const handleDownload: RequestHandler = async (req, res) => {
       });
     }
 
+    // Only YouTube is fully supported with ytdl-core
+    if (detectedPlatform !== "youtube") {
+      return res.status(400).json({
+        error: `${detectedPlatform.charAt(0).toUpperCase() + detectedPlatform.slice(1)} downloads coming soon! Currently only YouTube is supported.`,
+      });
+    }
+
     // YouTube downloads using ytdl-core
     console.log("[Download] Using ytdl-core for YouTube");
 
-    const info = await ytdl.getInfo(url);
-    console.log("[Download] Got video info:", info.videoDetails.title);
+    try {
+      const info = await ytdl.getInfo(url);
+      console.log("[Download] Got video info:", info.videoDetails.title);
 
-    const format = ytdl.chooseFormat(info.formats, {
-      quality: audioOnly ? "highestaudio" : "highest",
-    });
+      const formats = info.formats;
 
-    console.log("[Download] Downloading:", format.qualityLabel || "audio");
+      // Check if video is actually downloadable
+      if (!formats || formats.length === 0) {
+        return res.status(400).json({
+          error: "No downloadable formats found. This video may not be available for download.",
+        });
+      }
 
-    const stream = ytdl.downloadFromInfo(info, { format });
-    const chunks: Buffer[] = [];
-
-    const buffer = await new Promise<Buffer>((resolve, reject) => {
-      stream.on("data", (chunk: Buffer) => {
-        chunks.push(chunk);
+      const format = ytdl.chooseFormat(formats, {
+        quality: audioOnly ? "highestaudio" : "highest",
       });
-      stream.on("end", () => {
-        resolve(Buffer.concat(chunks));
-      });
-      stream.on("error", reject);
-    });
 
-    if (buffer.byteLength === 0) {
-      return res.status(400).json({ error: "No content to download" });
+      if (!format) {
+        return res.status(400).json({
+          error: audioOnly
+            ? "No audio format available for this video."
+            : "No video format available for this video.",
+        });
+      }
+
+      console.log("[Download] Downloading:", format.qualityLabel || "audio");
+
+      const stream = ytdl.downloadFromInfo(info, { format });
+      const chunks: Buffer[] = [];
+
+      const buffer = await new Promise<Buffer>((resolve, reject) => {
+        stream.on("data", (chunk: Buffer) => {
+          chunks.push(chunk);
+        });
+        stream.on("end", () => {
+          resolve(Buffer.concat(chunks));
+        });
+        stream.on("error", (err) => {
+          console.error("[Download] Stream error:", err);
+          reject(err);
+        });
+      });
+
+      if (buffer.byteLength === 0) {
+        return res.status(400).json({
+          error: "Download resulted in empty file. Please try another video.",
+        });
+      }
+
+      console.log("[Download] Downloaded:", buffer.byteLength, "bytes");
+
+      // Generate filename from video title
+      const title = info.videoDetails.title
+        .replace(/[^\w\s-]/g, "")
+        .slice(0, 100);
+      const ext = audioOnly ? "mp3" : "mp4";
+      const filename = `${title}.${ext}`;
+
+      console.log("[Download] Success! Filename:", filename);
+
+      res.setHeader("Content-Type", audioOnly ? "audio/mpeg" : "video/mp4");
+      res.setHeader("Content-Length", buffer.byteLength.toString());
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+      res.setHeader("Access-Control-Allow-Origin", "*");
+
+      res.send(buffer);
+    } catch (downloadError) {
+      throw downloadError;
     }
-
-    console.log("[Download] Downloaded:", buffer.byteLength, "bytes");
-
-    // Generate filename from video title
-    const title = info.videoDetails.title
-      .replace(/[^\w\s-]/g, "")
-      .slice(0, 100);
-    const ext = audioOnly ? "mp3" : "mp4";
-    const filename = `${title}.${ext}`;
-
-    console.log("[Download] Success! Filename:", filename);
-
-    res.setHeader("Content-Type", audioOnly ? "audio/mpeg" : "video/mp4");
-    res.setHeader("Content-Length", buffer.byteLength.toString());
-    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-    res.setHeader("Access-Control-Allow-Origin", "*");
-
-    res.send(buffer);
   } catch (error) {
     console.error("[Download] Exception:", error);
 
     let errorMessage = "Download failed. Please try again.";
 
-    // Handle specific ytdl-core errors
+    // Handle specific errors
     if (error instanceof Error) {
       const err = error as any;
+      const msg = error.message.toLowerCase();
 
-      // 410 - Video not available
-      if (err.statusCode === 410 || error.message.includes("410")) {
+      // HTTP Status Code Errors
+      if (err.statusCode === 410 || msg.includes("410")) {
         errorMessage = "Video is not available. It may be deleted, private, or age-restricted.";
       }
-      // 403 - Video blocked
-      else if (err.statusCode === 403 || error.message.includes("403")) {
-        errorMessage = "Access denied. This video may be restricted in your region.";
+      else if (err.statusCode === 403 || msg.includes("403")) {
+        errorMessage = "Access denied. This video may be restricted in your region or requires payment.";
       }
-      // 404 - Video not found
-      else if (err.statusCode === 404 || error.message.includes("404")) {
-        errorMessage = "Video not found. Please check the URL.";
+      else if (err.statusCode === 404 || msg.includes("404")) {
+        errorMessage = "Video not found. Please check the URL is correct.";
       }
-      // Video unavailable
-      else if (error.message.includes("unavailable") || error.message.includes("ENOTFOUND")) {
-        errorMessage = "Video not available. Please try a different link.";
+      else if (err.statusCode === 429 || msg.includes("429")) {
+        errorMessage = "Rate limited. Please wait a moment and try again.";
       }
-      // Age restricted
-      else if (error.message.includes("age")) {
+      // Network and Availability
+      else if (msg.includes("unavailable")) {
+        errorMessage = "Video is unavailable. It may have been removed or restricted.";
+      }
+      else if (msg.includes("enotfound") || msg.includes("network")) {
+        errorMessage = "Network error. Please check your connection and try again.";
+      }
+      else if (msg.includes("econnrefused")) {
+        errorMessage = "Could not connect to video service. Please try again.";
+      }
+      // Content Restrictions
+      else if (msg.includes("age") || msg.includes("restricted")) {
         errorMessage = "This video is age-restricted and cannot be downloaded.";
       }
-      // Private video
-      else if (error.message.includes("private")) {
+      else if (msg.includes("private")) {
         errorMessage = "This video is private and cannot be downloaded.";
       }
-      // No formats available
-      else if (error.message.includes("No formats")) {
+      else if (msg.includes("copyrighted") || msg.includes("copyright")) {
+        errorMessage = "This video has copyright protection and cannot be downloaded.";
+      }
+      else if (msg.includes("blocked") || msg.includes("not allowed")) {
+        errorMessage = "This video is blocked from downloading in your region.";
+      }
+      // Format Issues
+      else if (msg.includes("no formats") || msg.includes("no suitable")) {
         errorMessage = "No downloadable formats available for this video.";
+      }
+      else if (msg.includes("empty")) {
+        errorMessage = "Download resulted in empty file. Please try another video.";
+      }
+      else if (msg.includes("timeout")) {
+        errorMessage = "Download timed out. The video may be very large. Please try again.";
+      }
+      // Invalid Input
+      else if (msg.includes("invalid") || msg.includes("not a youtube")) {
+        errorMessage = "Invalid URL. Please check it's a correct YouTube link.";
+      }
+      else if (msg.includes("extracted")) {
+        errorMessage = "Could not extract video information. The link may be invalid.";
+      }
+      // Fallback with error message
+      else {
+        errorMessage = error.message || "Download failed. Please try again.";
       }
     }
 
