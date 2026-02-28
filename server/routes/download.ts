@@ -34,7 +34,10 @@ export const handleDownload: RequestHandler = async (req, res) => {
     console.log("[Download] Raw URL:", url);
 
     if (!url || typeof url !== "string" || !url.trim()) {
-      return res.status(400).json({ error: "URL is required" });
+      console.warn("[Download] Validation failed: URL is empty or invalid");
+      return res.status(400).json({
+        error: "URL is required. Please paste a YouTube link (e.g., https://youtube.com/watch?v=...)"
+      });
     }
 
     url = url.trim();
@@ -57,9 +60,19 @@ export const handleDownload: RequestHandler = async (req, res) => {
     console.log("[Download] Platform:", detectedPlatform);
 
     if (!detectedPlatform || !SUPPORTED_PLATFORMS.includes(detectedPlatform)) {
-      return res.status(400).json({
-        error: "Unsupported platform",
-      });
+      // Helpful error message
+      let errorMsg = "Could not detect the video platform. ";
+
+      // Check if it looks like a URL at all
+      if (!url.includes("://") && !url.includes(".")) {
+        errorMsg += "Please enter a full URL (starting with https://)";
+      } else if (url.includes("youtube") || url.includes("youtu.be")) {
+        errorMsg += "This looks like a YouTube URL but couldn't be parsed. Please try the direct video page URL.";
+      } else {
+        errorMsg += "Currently, only YouTube is supported. Please paste a YouTube URL (youtube.com or youtu.be).";
+      }
+
+      return res.status(400).json({ error: errorMsg });
     }
 
     // Only YouTube is fully supported with ytdl-core

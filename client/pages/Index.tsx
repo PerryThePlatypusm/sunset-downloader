@@ -54,6 +54,7 @@ export default function Index() {
     setDownloadStatus("validating");
     setDownloadProgress(10);
 
+    // Validate URL is not empty
     if (!trimmedUrl) {
       setErrorMessage("Please enter a URL");
       setDownloadStatus("error");
@@ -61,8 +62,27 @@ export default function Index() {
       return;
     }
 
+    // Validate URL length
     if (trimmedUrl.length > 2048) {
       setErrorMessage("URL is too long");
+      setDownloadStatus("error");
+      setIsDownloading(false);
+      return;
+    }
+
+    // Basic URL format validation
+    try {
+      new URL(trimmedUrl.startsWith("http") ? trimmedUrl : `https://${trimmedUrl}`);
+    } catch {
+      setErrorMessage("Please enter a valid URL (e.g., https://youtube.com/watch?v=...)");
+      setDownloadStatus("error");
+      setIsDownloading(false);
+      return;
+    }
+
+    // Check if URL looks like a YouTube URL
+    if (!trimmedUrl.includes("youtube") && !trimmedUrl.includes("youtu.be")) {
+      setErrorMessage("Currently, only YouTube links are supported. Please paste a YouTube URL.");
       setDownloadStatus("error");
       setIsDownloading(false);
       return;

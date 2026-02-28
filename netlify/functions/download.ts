@@ -220,11 +220,21 @@ export async function handler(event: any) {
     console.log("[Handler] Detected platform:", detectedPlatform);
 
     if (!detectedPlatform || !SUPPORTED_PLATFORMS.includes(detectedPlatform)) {
+      // Helpful error message
+      let errorMsg = "Could not detect the video platform. ";
+
+      // Check if it looks like a URL at all
+      if (!trimmedUrl.includes("://") && !trimmedUrl.includes(".")) {
+        errorMsg += "Please enter a full URL (starting with https://).";
+      } else if (trimmedUrl.includes("youtube") || trimmedUrl.includes("youtu.be")) {
+        errorMsg += "This looks like a YouTube URL but couldn't be parsed. Please try the direct video page URL.";
+      } else {
+        errorMsg += "Currently, only YouTube is supported. Please paste a YouTube URL (youtube.com or youtu.be).";
+      }
+
       return {
         statusCode: 400,
-        body: JSON.stringify({
-          error: `Unsupported platform`,
-        }),
+        body: JSON.stringify({ error: errorMsg }),
       };
     }
 
