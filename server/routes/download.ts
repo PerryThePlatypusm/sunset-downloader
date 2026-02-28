@@ -1,5 +1,5 @@
 import { RequestHandler } from "express";
-import { detectPlatform, isValidUrl, normalizeUrl } from "../utils/urlUtils";
+import { detectPlatform } from "../utils/urlUtils";
 import { exec } from "child_process";
 import { promisify } from "util";
 import * as fs from "fs";
@@ -9,14 +9,20 @@ const execAsync = promisify(exec);
 
 // Check if yt-dlp is available
 let YT_DLP_AVAILABLE = false;
-exec("yt-dlp --version", (error) => {
-  if (!error) {
-    YT_DLP_AVAILABLE = true;
-    console.log("[Download] yt-dlp is available for multi-platform downloads");
-  } else {
-    console.warn("[Download] yt-dlp not available - will use fallback");
-  }
-});
+
+function checkYtdlp() {
+  exec("yt-dlp --version", (error, stdout) => {
+    if (!error && stdout) {
+      YT_DLP_AVAILABLE = true;
+      console.log("[Download] yt-dlp is available for multi-platform downloads");
+    } else {
+      console.warn("[Download] yt-dlp not available - will use fallback");
+    }
+  });
+}
+
+// Check on startup
+checkYtdlp();
 
 interface DownloadRequest {
   url: string;
@@ -95,75 +101,70 @@ export const handleDownload: RequestHandler = async (req, res) => {
       }
     }
 
-    // Use yt-dlp if available (for all platforms), fallback to note for unsupported
-    if (!YT_DLP_AVAILABLE) {
-      if (detectedPlatform !== "youtube") {
-        return res.status(503).json({
-          error: "Multi-platform support temporarily unavailable. Only YouTube is supported right now.",
-        });
-      }
-    }
-
     console.log("[Download] Using yt-dlp for", detectedPlatform);
 
+    // If yt-dlp is not available, return error for non-YouTube
+    if (!YT_DLP_AVAILABLE && detectedPlatform !== "youtube") {
+      return res.status(503).json({
+        error: "Multi-platform support temporarily unavailable. Only YouTube is supported right now.",
+      });
+    }
+
     try {
-      // Temporary directory for downloads
+      // Create temp directory for downloads
       const tempDir = "/tmp/downloads";
-      if (!fs.existsSync(tempDir)) {
-        fs.mkdirSync(tempDir, { recursive: true });
+      try {
+        if (!fs.existsSync(tempDir)) {
+          fs.mkdirSync(tempDir, { recursive: true });
+        }
+      } catch (mkdirError) {
+        console.warn("[Download] Could not create temp dir, using current dir");
       }
 
       const outputTemplate = path.join(tempDir, "%(title)s.%(ext)s");
 
-      // Build yt-dlp command
-      let ytdlpArgs = [
-        url,
-        "-f", audioOnly ? "bestaudio/best" : "best",
-        "-o", outputTemplate,
-        "--no-warnings",
-        "--quiet",
-      ];
+      // Build yt-dlp command safely
+      const ytdlpCommand = YT_DLP_AVAILABLE
+        ? `yt-dlp "${url.replace(/"/g, '\\"')}" -f ${audioOnly ? "bestaudio/best" : "best"} -o "${outputTemplate}"${audioOnly ? " -x --audio-format mp3 --audio-quality 192" : ""} --no-warnings --quiet 2>/dev/null`
+        : null;
 
-      // Add format specifications
-      if (audioOnly) {
-        ytdlpArgs.push("-x");
-        ytdlpArgs.push("--audio-format", "mp3");
-        ytdlpArgs.push("--audio-quality", "192");
-      } else {
-        ytdlpArgs.push("-f", "best");
+      if (!ytdlpCommand) {
+        throw new Error("yt-dlp not available and YouTube URL required");
       }
 
-      console.log("[Download] Executing yt-dlp...");
+      console.log("[Download] Executing download...");
 
-      const { stdout, stderr } = await execAsync(
-        `yt-dlp ${ytdlpArgs.map((arg) => `"${arg}"`).join(" ")}`,
-        { timeout: 600000, maxBuffer: 100 * 1024 * 1024 } // 10 min timeout, 100MB buffer
-      );
-
-      console.log("[Download] yt-dlp output:", stdout);
-      if (stderr) console.warn("[Download] yt-dlp stderr:", stderr);
+      const { stdout } = await execAsync(ytdlpCommand, {
+        timeout: 300000, // 5 minute timeout
+        maxBuffer: 50 * 1024 * 1024, // 50MB buffer
+      });
 
       // Find the downloaded file
-      const files = fs.readdirSync(tempDir);
-      const downloadedFile = files.find((f) => !f.startsWith("."));
+      const files = fs.readdirSync(tempDir).filter((f) => !f.startsWith("."));
 
-      if (!downloadedFile) {
-        throw new Error("Download completed but file not found");
+      if (files.length === 0) {
+        throw new Error("Download completed but no file found");
       }
 
+      const downloadedFile = files[0];
       const filePath = path.join(tempDir, downloadedFile);
+
+      // Read file
       const buffer = fs.readFileSync(filePath);
 
       // Validate file size
-      const minFileSize = 10000; // 10KB minimum
-      if (buffer.byteLength < minFileSize) {
-        fs.unlinkSync(filePath);
-        throw new Error("Downloaded file is too small");
+      if (buffer.byteLength < 5000) {
+        try {
+          fs.unlinkSync(filePath);
+        } catch (e) {
+          // ignore cleanup errors
+        }
+        throw new Error("Downloaded file is too small or empty");
       }
 
-      console.log("[Download] Downloaded:", buffer.byteLength, "bytes");
-      console.log("[Download] Filename:", downloadedFile);
+      console.log("[Download] Downloaded:", buffer.byteLength, "bytes, filename:", downloadedFile);
 
+      // Set response headers
       res.setHeader("Content-Type", audioOnly ? "audio/mpeg" : "video/mp4");
       res.setHeader("Content-Length", buffer.byteLength.toString());
       res.setHeader("Content-Disposition", `attachment; filename="${downloadedFile}"`);
@@ -172,7 +173,11 @@ export const handleDownload: RequestHandler = async (req, res) => {
       res.setHeader("Access-Control-Allow-Origin", "*");
 
       // Clean up temp file
-      fs.unlinkSync(filePath);
+      try {
+        fs.unlinkSync(filePath);
+      } catch (cleanupError) {
+        console.warn("[Download] Cleanup failed:", cleanupError);
+      }
 
       res.send(buffer);
     } catch (downloadError) {
