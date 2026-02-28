@@ -66,9 +66,40 @@ async function downloadViaYtdl(
       throw new Error("No downloadable formats found. This video may not be available for download.");
     }
 
-    const format = ytdl.chooseFormat(formats, {
-      quality: audioOnly ? "highestaudio" : "highest",
-    });
+    // For audio: prefer MP4 container with audio codec for compatibility
+    // For video: prefer MP4 with both video and audio
+    let format;
+    if (audioOnly) {
+      // Choose audio with mp4 container for maximum compatibility
+      format = ytdl.chooseFormat(formats, {
+        quality: "highestaudio",
+        filter: (f) => {
+          return (
+            f.hasAudio &&
+            !f.hasVideo &&
+            (f.container === "mp4" || f.mimeType?.includes("audio"))
+          );
+        },
+      });
+
+      // Fallback to any audio if mp4 not available
+      if (!format) {
+        format = ytdl.chooseFormat(formats, { quality: "highestaudio" });
+      }
+    } else {
+      // Choose video with audio in mp4 container for maximum compatibility
+      format = ytdl.chooseFormat(formats, {
+        quality: "highest",
+        filter: (f) => {
+          return f.container === "mp4" && f.hasVideo && f.hasAudio;
+        },
+      });
+
+      // Fallback to highest quality if mp4 not available
+      if (!format) {
+        format = ytdl.chooseFormat(formats, { quality: "highest" });
+      }
+    }
 
     if (!format) {
       throw new Error(
@@ -78,17 +109,31 @@ async function downloadViaYtdl(
       );
     }
 
-    console.log(`[ytdl] Format:`, format.qualityLabel || "audio");
+    console.log(`[ytdl] Format:`, {
+      qualityLabel: format.qualityLabel || "audio",
+      container: format.container,
+      hasAudio: format.hasAudio,
+      hasVideo: format.hasVideo,
+      mimeType: format.mimeType,
+    });
 
     const stream = ytdl.downloadFromInfo(info, { format });
     const chunks: Buffer[] = [];
 
     const buffer = await new Promise<Buffer>((resolve, reject) => {
+      let dataReceived = false;
       stream.on("data", (chunk: Buffer) => {
-        chunks.push(chunk);
+        dataReceived = true;
+        if (chunk.length > 0) {
+          chunks.push(chunk);
+        }
       });
       stream.on("end", () => {
-        resolve(Buffer.concat(chunks));
+        if (!dataReceived) {
+          reject(new Error("No data received from stream"));
+        } else {
+          resolve(Buffer.concat(chunks));
+        }
       });
       stream.on("error", (err) => {
         console.error(`[ytdl] Stream error:`, err);
@@ -96,18 +141,39 @@ async function downloadViaYtdl(
       });
     });
 
+    // Validate file size - should be at least a few KB
+    const minFileSize = 10000; // 10KB minimum
+    if (buffer.byteLength < minFileSize) {
+      console.warn(`[ytdl] File too small: ${buffer.byteLength} bytes`);
+      throw new Error("Downloaded file is too small or corrupt. Please try another video.");
+    }
+
     console.log(`[ytdl] Downloaded: ${buffer.byteLength} bytes`);
 
-    if (buffer.byteLength === 0) {
-      throw new Error("Empty file");
+    // Validate file header for MP3 or MP4
+    const fileHeader = buffer.slice(0, 4).toString("hex");
+    if (audioOnly) {
+      // MP3 files start with FFE or ID3
+      if (!fileHeader.startsWith("ffe") && !fileHeader.startsWith("4944")) {
+        console.warn(`[ytdl] Invalid MP3 header: ${fileHeader}`);
+        throw new Error("Downloaded audio file appears to be corrupt. Please try again.");
+      }
+    } else {
+      // MP4 files have ftyp at offset 4
+      const mp4Header = buffer.slice(4, 8).toString("ascii");
+      if (mp4Header !== "ftyp") {
+        console.warn(`[ytdl] Invalid MP4 header: ${fileHeader}, ${mp4Header}`);
+        throw new Error("Downloaded video file appears to be corrupt. Please try again.");
+      }
     }
 
     // Get filename from video title
     const title = info.videoDetails.title
       .replace(/[^\w\s-]/g, "")
-      .slice(0, 100);
+      .slice(0, 100)
+      .trim();
     const ext = audioOnly ? "mp3" : "mp4";
-    const filename = `${title}.${ext}`;
+    const filename = `${title || "download"}.${ext}`;
 
     return {
       buffer,
@@ -189,8 +255,11 @@ export async function handler(event: any) {
       headers: {
         "Content-Type": audioOnly ? "audio/mpeg" : "video/mp4",
         "Content-Disposition": `attachment; filename="${filename}"`,
+        "Content-Length": buffer.byteLength.toString(),
         "Access-Control-Allow-Origin": "*",
         "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0",
       },
       body: base64,
       isBase64Encoded: true,

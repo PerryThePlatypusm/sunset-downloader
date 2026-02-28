@@ -85,9 +85,40 @@ export const handleDownload: RequestHandler = async (req, res) => {
         });
       }
 
-      const format = ytdl.chooseFormat(formats, {
-        quality: audioOnly ? "highestaudio" : "highest",
-      });
+      // For audio: prefer MP4 container with audio codec for compatibility
+      // For video: prefer MP4 with both video and audio
+      let format;
+      if (audioOnly) {
+        // Choose audio with mp4 container for maximum compatibility (Windows Media Player, iOS, Android)
+        format = ytdl.chooseFormat(formats, {
+          quality: "highestaudio",
+          filter: (f) => {
+            return (
+              f.hasAudio &&
+              !f.hasVideo &&
+              (f.container === "mp4" || f.mimeType?.includes("audio"))
+            );
+          },
+        });
+
+        // Fallback to any audio if mp4 not available
+        if (!format) {
+          format = ytdl.chooseFormat(formats, { quality: "highestaudio" });
+        }
+      } else {
+        // Choose video with audio in mp4 container for maximum compatibility
+        format = ytdl.chooseFormat(formats, {
+          quality: "highest",
+          filter: (f) => {
+            return f.container === "mp4" && f.hasVideo && f.hasAudio;
+          },
+        });
+
+        // Fallback to highest quality if mp4 not available
+        if (!format) {
+          format = ytdl.chooseFormat(formats, { quality: "highest" });
+        }
+      }
 
       if (!format) {
         return res.status(400).json({
@@ -97,17 +128,31 @@ export const handleDownload: RequestHandler = async (req, res) => {
         });
       }
 
-      console.log("[Download] Downloading:", format.qualityLabel || "audio");
+      console.log("[Download] Format:", {
+        qualityLabel: format.qualityLabel || "audio",
+        container: format.container,
+        hasAudio: format.hasAudio,
+        hasVideo: format.hasVideo,
+        mimeType: format.mimeType,
+      });
 
       const stream = ytdl.downloadFromInfo(info, { format });
       const chunks: Buffer[] = [];
 
       const buffer = await new Promise<Buffer>((resolve, reject) => {
+        let dataReceived = false;
         stream.on("data", (chunk: Buffer) => {
-          chunks.push(chunk);
+          dataReceived = true;
+          if (chunk.length > 0) {
+            chunks.push(chunk);
+          }
         });
         stream.on("end", () => {
-          resolve(Buffer.concat(chunks));
+          if (!dataReceived) {
+            reject(new Error("No data received from stream"));
+          } else {
+            resolve(Buffer.concat(chunks));
+          }
         });
         stream.on("error", (err) => {
           console.error("[Download] Stream error:", err);
@@ -115,20 +160,45 @@ export const handleDownload: RequestHandler = async (req, res) => {
         });
       });
 
-      if (buffer.byteLength === 0) {
+      // Validate file size - should be at least a few KB
+      const minFileSize = 10000; // 10KB minimum
+      if (buffer.byteLength < minFileSize) {
+        console.warn(`[Download] File too small: ${buffer.byteLength} bytes`);
         return res.status(400).json({
-          error: "Download resulted in empty file. Please try another video.",
+          error: "Downloaded file is too small or corrupt. Please try another video.",
         });
       }
 
       console.log("[Download] Downloaded:", buffer.byteLength, "bytes");
 
+      // Validate file header for MP3 or MP4
+      const fileHeader = buffer.slice(0, 4).toString("hex");
+      if (audioOnly) {
+        // MP3 files start with FFE or ID3
+        if (!fileHeader.startsWith("ffe") && !fileHeader.startsWith("4944")) {
+          console.warn(`[Download] Invalid MP3 header: ${fileHeader}`);
+          return res.status(400).json({
+            error: "Downloaded audio file appears to be corrupt. Please try again.",
+          });
+        }
+      } else {
+        // MP4 files have ftyp at offset 4 (00 00 00 20 66 74 79 70)
+        const mp4Header = buffer.slice(4, 8).toString("ascii");
+        if (mp4Header !== "ftyp") {
+          console.warn(`[Download] Invalid MP4 header: ${fileHeader}, ${mp4Header}`);
+          return res.status(400).json({
+            error: "Downloaded video file appears to be corrupt. Please try again.",
+          });
+        }
+      }
+
       // Generate filename from video title
       const title = info.videoDetails.title
         .replace(/[^\w\s-]/g, "")
-        .slice(0, 100);
+        .slice(0, 100)
+        .trim();
       const ext = audioOnly ? "mp3" : "mp4";
-      const filename = `${title}.${ext}`;
+      const filename = `${title || "download"}.${ext}`;
 
       console.log("[Download] Success! Filename:", filename);
 
@@ -136,6 +206,7 @@ export const handleDownload: RequestHandler = async (req, res) => {
       res.setHeader("Content-Length", buffer.byteLength.toString());
       res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
       res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+      res.setHeader("Pragma", "no-cache");
       res.setHeader("Access-Control-Allow-Origin", "*");
 
       res.send(buffer);
