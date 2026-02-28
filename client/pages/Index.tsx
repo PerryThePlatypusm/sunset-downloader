@@ -80,13 +80,8 @@ export default function Index() {
       return;
     }
 
-    // Check if URL looks like a YouTube URL
-    if (!trimmedUrl.includes("youtube") && !trimmedUrl.includes("youtu.be")) {
-      setErrorMessage("Currently, only YouTube links are supported. Please paste a YouTube URL.");
-      setDownloadStatus("error");
-      setIsDownloading(false);
-      return;
-    }
+    // URL is valid - proceed with download
+    // Backend will handle platform detection and validation
 
     const isAnimePlatform =
       selectedPlatform === "crunchyroll" || selectedPlatform === "hianime";

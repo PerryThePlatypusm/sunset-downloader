@@ -1,6 +1,22 @@
 import { RequestHandler } from "express";
 import { detectPlatform, isValidUrl, normalizeUrl } from "../utils/urlUtils";
-import ytdl from "ytdl-core";
+import { exec } from "child_process";
+import { promisify } from "util";
+import * as fs from "fs";
+import * as path from "path";
+
+const execAsync = promisify(exec);
+
+// Check if yt-dlp is available
+let YT_DLP_AVAILABLE = false;
+exec("yt-dlp --version", (error) => {
+  if (!error) {
+    YT_DLP_AVAILABLE = true;
+    console.log("[Download] yt-dlp is available for multi-platform downloads");
+  } else {
+    console.warn("[Download] yt-dlp not available - will use fallback");
+  }
+});
 
 interface DownloadRequest {
   url: string;
@@ -59,168 +75,104 @@ export const handleDownload: RequestHandler = async (req, res) => {
 
     console.log("[Download] Platform:", detectedPlatform);
 
-    if (!detectedPlatform || !SUPPORTED_PLATFORMS.includes(detectedPlatform)) {
-      // Helpful error message
-      let errorMsg = "Could not detect the video platform. ";
+    // If we have yt-dlp, we support many platforms
+    // If not, at least validate it looks like a URL
+    if (YT_DLP_AVAILABLE) {
+      // With yt-dlp, we can try almost any URL
+      console.log("[Download] Attempting download with yt-dlp");
+    } else {
+      // Without yt-dlp, do basic validation
+      if (!detectedPlatform || !["youtube"].includes(detectedPlatform)) {
+        let errorMsg = "Could not detect a supported platform. ";
 
-      // Check if it looks like a URL at all
-      if (!url.includes("://") && !url.includes(".")) {
-        errorMsg += "Please enter a full URL (starting with https://)";
-      } else if (url.includes("youtube") || url.includes("youtu.be")) {
-        errorMsg += "This looks like a YouTube URL but couldn't be parsed. Please try the direct video page URL.";
-      } else {
-        errorMsg += "Currently, only YouTube is supported. Please paste a YouTube URL (youtube.com or youtu.be).";
+        if (!url.includes("://") && !url.includes(".")) {
+          errorMsg += "Please enter a full URL (starting with https://).";
+        } else {
+          errorMsg += "Try a YouTube URL or ensure yt-dlp is installed on the server.";
+        }
+
+        return res.status(400).json({ error: errorMsg });
       }
-
-      return res.status(400).json({ error: errorMsg });
     }
 
-    // Only YouTube is fully supported with ytdl-core
-    if (detectedPlatform !== "youtube") {
-      return res.status(400).json({
-        error: `${detectedPlatform.charAt(0).toUpperCase() + detectedPlatform.slice(1)} downloads coming soon! Currently only YouTube is supported.`,
-      });
+    // Use yt-dlp if available (for all platforms), fallback to note for unsupported
+    if (!YT_DLP_AVAILABLE) {
+      if (detectedPlatform !== "youtube") {
+        return res.status(503).json({
+          error: "Multi-platform support temporarily unavailable. Only YouTube is supported right now.",
+        });
+      }
     }
 
-    // YouTube downloads using ytdl-core
-    console.log("[Download] Using ytdl-core for YouTube");
+    console.log("[Download] Using yt-dlp for", detectedPlatform);
 
     try {
-      const info = await ytdl.getInfo(url);
-      console.log("[Download] Got video info:", info.videoDetails.title);
-
-      const formats = info.formats;
-
-      // Check if video is actually downloadable
-      if (!formats || formats.length === 0) {
-        return res.status(400).json({
-          error: "No downloadable formats found. This video may not be available for download.",
-        });
+      // Temporary directory for downloads
+      const tempDir = "/tmp/downloads";
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
       }
 
-      // For audio: prefer MP4 container with audio codec for compatibility
-      // For video: prefer MP4 with both video and audio
-      let format;
+      const outputTemplate = path.join(tempDir, "%(title)s.%(ext)s");
+
+      // Build yt-dlp command
+      let ytdlpArgs = [
+        url,
+        "-f", audioOnly ? "bestaudio/best" : "best",
+        "-o", outputTemplate,
+        "--no-warnings",
+        "--quiet",
+      ];
+
+      // Add format specifications
       if (audioOnly) {
-        // Choose audio with mp4 container for maximum compatibility (Windows Media Player, iOS, Android)
-        format = ytdl.chooseFormat(formats, {
-          quality: "highestaudio",
-          filter: (f) => {
-            return (
-              f.hasAudio &&
-              !f.hasVideo &&
-              (f.container === "mp4" || f.mimeType?.includes("audio"))
-            );
-          },
-        });
-
-        // Fallback to any audio if mp4 not available
-        if (!format) {
-          format = ytdl.chooseFormat(formats, { quality: "highestaudio" });
-        }
+        ytdlpArgs.push("-x");
+        ytdlpArgs.push("--audio-format", "mp3");
+        ytdlpArgs.push("--audio-quality", "192");
       } else {
-        // Choose video with audio in mp4 container for maximum compatibility
-        format = ytdl.chooseFormat(formats, {
-          quality: "highest",
-          filter: (f) => {
-            return f.container === "mp4" && f.hasVideo && f.hasAudio;
-          },
-        });
-
-        // Fallback to highest quality if mp4 not available
-        if (!format) {
-          format = ytdl.chooseFormat(formats, { quality: "highest" });
-        }
+        ytdlpArgs.push("-f", "best");
       }
 
-      if (!format) {
-        return res.status(400).json({
-          error: audioOnly
-            ? "No audio format available for this video."
-            : "No video format available for this video.",
-        });
+      console.log("[Download] Executing yt-dlp...");
+
+      const { stdout, stderr } = await execAsync(
+        `yt-dlp ${ytdlpArgs.map((arg) => `"${arg}"`).join(" ")}`,
+        { timeout: 600000, maxBuffer: 100 * 1024 * 1024 } // 10 min timeout, 100MB buffer
+      );
+
+      console.log("[Download] yt-dlp output:", stdout);
+      if (stderr) console.warn("[Download] yt-dlp stderr:", stderr);
+
+      // Find the downloaded file
+      const files = fs.readdirSync(tempDir);
+      const downloadedFile = files.find((f) => !f.startsWith("."));
+
+      if (!downloadedFile) {
+        throw new Error("Download completed but file not found");
       }
 
-      console.log("[Download] Format:", {
-        qualityLabel: format.qualityLabel || "audio",
-        container: format.container,
-        hasAudio: format.hasAudio,
-        hasVideo: format.hasVideo,
-        mimeType: format.mimeType,
-      });
+      const filePath = path.join(tempDir, downloadedFile);
+      const buffer = fs.readFileSync(filePath);
 
-      const stream = ytdl.downloadFromInfo(info, { format });
-      const chunks: Buffer[] = [];
-
-      const buffer = await new Promise<Buffer>((resolve, reject) => {
-        let dataReceived = false;
-        stream.on("data", (chunk: Buffer) => {
-          dataReceived = true;
-          if (chunk.length > 0) {
-            chunks.push(chunk);
-          }
-        });
-        stream.on("end", () => {
-          if (!dataReceived) {
-            reject(new Error("No data received from stream"));
-          } else {
-            resolve(Buffer.concat(chunks));
-          }
-        });
-        stream.on("error", (err) => {
-          console.error("[Download] Stream error:", err);
-          reject(err);
-        });
-      });
-
-      // Validate file size - should be at least a few KB
+      // Validate file size
       const minFileSize = 10000; // 10KB minimum
       if (buffer.byteLength < minFileSize) {
-        console.warn(`[Download] File too small: ${buffer.byteLength} bytes`);
-        return res.status(400).json({
-          error: "Downloaded file is too small or corrupt. Please try another video.",
-        });
+        fs.unlinkSync(filePath);
+        throw new Error("Downloaded file is too small");
       }
 
       console.log("[Download] Downloaded:", buffer.byteLength, "bytes");
-
-      // Validate file header for MP3 or MP4
-      const fileHeader = buffer.slice(0, 4).toString("hex");
-      if (audioOnly) {
-        // MP3 files start with FFE or ID3
-        if (!fileHeader.startsWith("ffe") && !fileHeader.startsWith("4944")) {
-          console.warn(`[Download] Invalid MP3 header: ${fileHeader}`);
-          return res.status(400).json({
-            error: "Downloaded audio file appears to be corrupt. Please try again.",
-          });
-        }
-      } else {
-        // MP4 files have ftyp at offset 4 (00 00 00 20 66 74 79 70)
-        const mp4Header = buffer.slice(4, 8).toString("ascii");
-        if (mp4Header !== "ftyp") {
-          console.warn(`[Download] Invalid MP4 header: ${fileHeader}, ${mp4Header}`);
-          return res.status(400).json({
-            error: "Downloaded video file appears to be corrupt. Please try again.",
-          });
-        }
-      }
-
-      // Generate filename from video title
-      const title = info.videoDetails.title
-        .replace(/[^\w\s-]/g, "")
-        .slice(0, 100)
-        .trim();
-      const ext = audioOnly ? "mp3" : "mp4";
-      const filename = `${title || "download"}.${ext}`;
-
-      console.log("[Download] Success! Filename:", filename);
+      console.log("[Download] Filename:", downloadedFile);
 
       res.setHeader("Content-Type", audioOnly ? "audio/mpeg" : "video/mp4");
       res.setHeader("Content-Length", buffer.byteLength.toString());
-      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      res.setHeader("Content-Disposition", `attachment; filename="${downloadedFile}"`);
       res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
       res.setHeader("Pragma", "no-cache");
       res.setHeader("Access-Control-Allow-Origin", "*");
+
+      // Clean up temp file
+      fs.unlinkSync(filePath);
 
       res.send(buffer);
     } catch (downloadError) {

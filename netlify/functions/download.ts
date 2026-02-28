@@ -240,12 +240,14 @@ export async function handler(event: any) {
 
     console.log("[Handler] Starting download...");
 
-    // Only YouTube is fully supported with ytdl-core
+    // This Netlify function uses ytdl-core (YouTube only)
+    // For multi-platform support (Spotify, TikTok, etc.), use the Railway backend
+    // by setting VITE_API_URL environment variable
     if (detectedPlatform !== "youtube") {
       return {
         statusCode: 400,
         body: JSON.stringify({
-          error: `${detectedPlatform.charAt(0).toUpperCase() + detectedPlatform.slice(1)} downloads coming soon! Currently only YouTube is supported.`,
+          error: "Multi-platform downloads require the Railway backend. Currently, only YouTube is supported on Netlify Functions. Set VITE_API_URL to your Railway backend URL for full support.",
         }),
       };
     }
