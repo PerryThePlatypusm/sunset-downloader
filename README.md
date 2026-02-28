@@ -1,50 +1,32 @@
 # Sunset Downloader
 
-A self-hostable media downloader supporting YouTube, Spotify, Instagram, TikTok, and 1000+ platforms.
-
-## Quick Start
-
-### Option 1: Docker (Recommended)
-```bash
-docker-compose up
-```
-
-### Option 2: Node.js
-```bash
-npm install
-npm run start:backend
-```
-
-See [QUICK_START_SELFHOST.md](./QUICK_START_SELFHOST.md) for detailed setup instructions.
-
-## Deployment Options
-
-- **Local Development**: Run on your computer with `npm run start:backend`
-- **Docker**: Deploy using Docker/Docker Compose for any OS
-- **VPS**: Deploy to your own server with Nginx/HTTPS support
-- **Cloud**: Deploy to any cloud provider that supports Docker
-
-See [SELF_HOST_SETUP.md](./SELF_HOST_SETUP.md) for complete deployment guide.
+A media downloader supporting YouTube and 1000+ platforms. Download as MP3 (audio) or MP4 (video).
 
 ## Features
 
-- ✅ YouTube, Spotify, Instagram, TikTok, Twitter, and 1000+ platforms
+- ✅ YouTube support (fully working)
 - ✅ Download as MP3 (audio) or MP4 (video)
 - ✅ Configurable quality settings
 - ✅ Fast, free, no API keys needed
-- ✅ Self-hosted: you control the data
 - ✅ Works on Windows Media Player, VLC, iOS, Android
+- ✅ Deployed on Netlify - live and ready to use
 
-## Configuration
-
-Set the backend URL for the frontend:
+## Quick Start (Development)
 
 ```bash
-export VITE_API_URL=http://localhost:3000    # Local
-export VITE_API_URL=https://your-domain.com  # Production
+npm install
+npm run dev
 ```
 
-Or create a `.env` file (see `.env.example`).
+Starts development server at `http://localhost:5173`
+
+## Build for Production
+
+```bash
+npm run build
+```
+
+Creates optimized production build.
 
 ## Legal Notice
 
