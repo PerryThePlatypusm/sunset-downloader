@@ -89,24 +89,34 @@ export const handleDownload: RequestHandler = async (req, res) => {
     } else {
       // Without yt-dlp, do basic validation
       if (!detectedPlatform || !["youtube"].includes(detectedPlatform)) {
-        let errorMsg = "Could not detect a supported platform. ";
+        let errorMsg = "Multi-platform downloads are not available right now.\n\n";
+        errorMsg += "✅ YouTube downloads: Available\n";
+        errorMsg += "❌ Other platforms (Spotify, Instagram, TikTok, etc.): Requires setup\n\n";
+        errorMsg += "To enable all platforms, install yt-dlp:\n";
+        errorMsg += "1. Install Python: https://python.org\n";
+        errorMsg += "2. Run: pip install yt-dlp\n";
+        errorMsg += "3. Restart this app\n\n";
+        errorMsg += "For now, try a YouTube URL or follow the setup above.";
 
-        if (!url.includes("://") && !url.includes(".")) {
-          errorMsg += "Please enter a full URL (starting with https://).";
-        } else {
-          errorMsg += "Try a YouTube URL or ensure yt-dlp is installed on the server.";
-        }
-
-        return res.status(400).json({ error: errorMsg });
+        return res.status(503).json({ error: errorMsg });
       }
     }
 
-    console.log("[Download] Using yt-dlp for", detectedPlatform);
+    if (YT_DLP_AVAILABLE) {
+      console.log("[Download] Using yt-dlp for", detectedPlatform);
+    } else {
+      console.log("[Download] Using YouTube fallback for", detectedPlatform);
+    }
 
     // If yt-dlp is not available, return error for non-YouTube
     if (!YT_DLP_AVAILABLE && detectedPlatform !== "youtube") {
       return res.status(503).json({
-        error: "Multi-platform support temporarily unavailable. Only YouTube is supported right now.",
+        error: "Multi-platform support requires yt-dlp installation.\n\n" +
+               "To enable all platforms:\n" +
+               "1. Install Python: https://python.org\n" +
+               "2. Run: pip install yt-dlp\n" +
+               "3. Restart this app\n\n" +
+               "YouTube downloads work without yt-dlp.",
       });
     }
 

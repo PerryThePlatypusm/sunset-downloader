@@ -4,6 +4,7 @@ import cors from "cors";
 import multer from "multer";
 import { handleDemo } from "./routes/demo";
 import { handleDownload, validateUrl } from "./routes/download";
+import { handleStatus } from "./routes/status";
 import { handleBugReport } from "./routes/bug-report";
 import { handleTestWebhook } from "./routes/test-webhook";
 import { handleDiscordGreeting } from "./routes/discord-greeting";
@@ -28,6 +29,9 @@ export function createServer() {
   });
 
   app.get("/api/demo", handleDemo);
+
+  // System status endpoint - shows what platforms are available
+  app.get("/api/status", handleStatus);
 
   // Download routes
   app.post("/api/download", handleDownload);

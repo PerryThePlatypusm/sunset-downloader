@@ -63,19 +63,40 @@ ffmpeg -version
 
 ## Installation Steps
 
-### Step 1: Clone or Navigate to Project
+### Quick Setup (Automated)
+
+We've created setup scripts that automatically install everything for you:
+
+**On Mac/Linux:**
+```bash
+chmod +x setup.sh  # Make script executable (one time only)
+./setup.sh
+```
+
+**On Windows:**
+```bash
+setup.bat
+```
+
+These scripts will check for Node.js, Python, FFmpeg, and install yt-dlp automatically.
+
+---
+
+### Manual Setup (If Scripts Don't Work)
+
+#### Step 1: Clone or Navigate to Project
 ```bash
 cd sunset-downloader
 ```
 
-### Step 2: Install Node Dependencies
+#### Step 2: Install Node Dependencies
 ```bash
 npm install
 # or if you use pnpm:
 pnpm install
 ```
 
-### Step 3: Install yt-dlp
+#### Step 3: Install yt-dlp
 This is the tool that actually downloads from YouTube, Spotify, Instagram, TikTok, etc.
 
 **Windows:**

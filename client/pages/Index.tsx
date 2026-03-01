@@ -8,6 +8,7 @@ import SpotifyQualitySelector from "@/components/SpotifyQualitySelector";
 import EpisodeSelector from "@/components/EpisodeSelector";
 import DownloadProgress from "@/components/DownloadProgress";
 import TOSNotification from "@/components/TOSNotification";
+import SystemStatus from "@/components/SystemStatus";
 import { usePixelAnimation } from "@/hooks/use-pixel-animation";
 import { useConfetti } from "@/hooks/use-confetti";
 import { Download, Music, Video, Zap, Check, AlertCircle } from "lucide-react";
@@ -230,6 +231,9 @@ export default function Index() {
               Instagram, Twitter, TikTok, and many more!
             </p>
           </div>
+
+          {/* System Status Alert */}
+          <SystemStatus />
 
           {/* Download Card */}
           <div className="bg-gradient-to-br from-sunset-800/50 to-sunset-800/30 backdrop-blur-xl border border-sunset-700/50 rounded-2xl p-4 sm:p-6 md:p-8 shadow-2xl shadow-sunset-900/50">
