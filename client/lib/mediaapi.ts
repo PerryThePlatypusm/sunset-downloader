@@ -120,6 +120,11 @@ export async function downloadMediaAPI(
       helpfulMessage = "URL not supported or video not accessible.";
     }
 
+    // Add helpful suggestions based on error
+    if (helpfulMessage.includes("service") || helpfulMessage.includes("unavailable")) {
+      helpfulMessage += " All download services are temporarily unavailable. This sometimes happens if servers are overloaded. Please try again in a few moments.";
+    }
+
     return {
       success: false,
       error: helpfulMessage,
