@@ -1,8 +1,8 @@
 import { RequestHandler } from "express";
 
 /**
- * Download handler using FastSaver API (primary) with fallbacks
- * FastSaver is the most reliable service for multi-platform downloads
+ * Download handler using Cobalt API (primary) with Y2mate fallback
+ * Supports 1000+ platforms
  */
 
 interface DownloadResponse {
@@ -38,7 +38,8 @@ async function fetchWithTimeout(
 }
 
 /**
- * Use cobalt.tools API (primary)
+ * Try Cobalt API (primary)
+ * Using minimal JSON format for compatibility
  */
 async function downloadWithCobalt(
   url: string,
@@ -46,51 +47,42 @@ async function downloadWithCobalt(
   quality: string
 ): Promise<DownloadResponse> {
   try {
-    console.log("[Cobalt] Attempting download with URL:", url);
+    console.log("[Cobalt] Attempting with minimal request format...");
 
+    // Use absolute minimal request - just the URL
     const response = await fetchWithTimeout(
       "https://api.cobalt.tools/api/json",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Accept: "application/json",
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         },
         body: JSON.stringify({
           url: url.trim(),
-          videoAudio: audioOnly ? "audio" : "video",
-          audioFormat: audioOnly ? "mp3" : "mp4",
-          vQuality: audioOnly ? "audio" : quality,
-          aFormat: "mp3",
         }),
       },
       20000
     );
 
+    console.log(`[Cobalt] Response status: ${response.status}`);
+
     if (!response.ok) {
-      console.log(`[Cobalt] HTTP ${response.status}`);
-
-      if (response.status === 400) {
-        return { error: "Invalid URL for Cobalt" };
-      } else if (response.status === 404) {
-        return { error: "Video not found" };
-      }
-
-      return { error: `Cobalt service error: ${response.status}` };
+      const text = await response.text();
+      console.log(`[Cobalt] Error response: ${text.substring(0, 100)}`);
+      return { error: `HTTP ${response.status}` };
     }
 
     const data = await response.json();
-    console.log("[Cobalt] Response received");
+    console.log("[Cobalt] Parsed response");
 
     if (data.error) {
       console.log(`[Cobalt] API error: ${data.error}`);
-      return { error: `${data.error}` };
+      return { error: data.error };
     }
 
     if (!data.url) {
-      console.log("[Cobalt] No URL in response");
-      return { error: "No download URL generated" };
+      console.log("[Cobalt] No download URL in response");
+      return { error: "No URL in response" };
     }
 
     console.log("[Cobalt] Success!");
@@ -106,7 +98,7 @@ async function downloadWithCobalt(
 }
 
 /**
- * Try direct y2mate endpoint as fallback
+ * Try Y2mate API (fallback)
  */
 async function downloadWithY2mate(
   url: string,
@@ -132,15 +124,19 @@ async function downloadWithY2mate(
         },
         body: params.toString(),
       },
-      15000
+      20000
     );
 
+    console.log(`[Y2mate] Response status: ${response.status}`);
+
     if (!response.ok) {
-      console.log(`[Y2mate] HTTP ${response.status}`);
-      return { error: `Service error: ${response.status}` };
+      const text = await response.text();
+      console.log(`[Y2mate] Error response: ${text.substring(0, 100)}`);
+      return { error: `HTTP ${response.status}` };
     }
 
     const data = await response.json();
+    console.log("[Y2mate] Parsed response");
 
     if (data.error) {
       console.log(`[Y2mate] API error: ${data.error}`);
@@ -148,8 +144,8 @@ async function downloadWithY2mate(
     }
 
     if (!data.url) {
-      console.log("[Y2mate] No URL in response");
-      return { error: "No download link" };
+      console.log("[Y2mate] No download URL in response");
+      return { error: "No URL in response" };
     }
 
     console.log("[Y2mate] Success!");
@@ -184,12 +180,12 @@ export const handleDownload: RequestHandler = async (req, res) => {
     console.log("[Download] Format:", audioOnly ? "audio" : "video");
     console.log("[Download] Quality:", quality);
 
-    // Try Cobalt first (primary - most reliable for 1000+ platforms)
+    // Try Cobalt first
     console.log("[Download] Trying Cobalt API...");
     let result = await downloadWithCobalt(url, audioOnly, quality);
 
     if (!result.error && result.url) {
-      console.log("[Download] Success with Cobalt!");
+      console.log("[Download] ✓ Success with Cobalt!");
       return res.json({
         success: true,
         url: result.url,
@@ -197,12 +193,14 @@ export const handleDownload: RequestHandler = async (req, res) => {
       });
     }
 
+    console.log("[Download] Cobalt failed:", result.error);
+
     // Try Y2mate as fallback
-    console.log("[Download] Cobalt failed, trying Y2mate API...");
+    console.log("[Download] Trying Y2mate API as fallback...");
     result = await downloadWithY2mate(url, audioOnly, quality);
 
     if (!result.error && result.url) {
-      console.log("[Download] Success with Y2mate!");
+      console.log("[Download] ✓ Success with Y2mate!");
       return res.json({
         success: true,
         url: result.url,
@@ -210,21 +208,30 @@ export const handleDownload: RequestHandler = async (req, res) => {
       });
     }
 
-    // All services failed - provide helpful error
-    console.error("[Download] All services failed. Last error:", result.error);
-    const errorMsg = result.error || "Unable to download from this URL";
+    console.log("[Download] Y2mate also failed:", result.error);
 
-    // Provide more detailed help based on what failed
+    // All services failed
+    console.error("[Download] All services failed");
+    const errorMsg = result.error || "Unable to download";
+
+    // Determine helpful error message
     let helpMessage = `Download Failed: ${errorMsg}`;
 
-    if (errorMsg.includes("404")) {
-      helpMessage = `Video Not Found\n\nThis usually means:\n1. Video URL is incorrect or broken\n2. Video has been removed or deleted\n3. Video is private\n\nPlease verify the URL and try again`;
+    if (errorMsg.includes("404") || errorMsg.includes("not found")) {
+      helpMessage =
+        "Video Not Found\n\nThis usually means:\n1. Video URL is incorrect\n2. Video has been removed\n3. Video is private\n\nPlease verify the URL and try again";
     } else if (errorMsg.includes("400") || errorMsg.includes("Invalid")) {
-      helpMessage = `Invalid URL or Unsupported Platform\n\nTry:\n1. Copy the full URL from your browser\n2. Make sure it's from a supported platform\n3. Ensure no extra spaces or characters`;
-    } else if (errorMsg.includes("timeout") || errorMsg.includes("fetch failed")) {
-      helpMessage = `Connection Issue\n\nTry:\n1. Check your internet connection\n2. Wait a moment and try again\n3. Use a shorter video\n4. Try a different video`;
-    } else if (errorMsg.includes("Rate limited") || errorMsg.includes("overloaded")) {
-      helpMessage = `Services Overloaded\n\nOur download services are temporarily busy.\n\nTry:\n1. Wait 30 seconds\n2. Try again\n3. Use a different video`;
+      helpMessage =
+        "Invalid URL or Unsupported Platform\n\nMake sure:\n1. You copied the full URL from your browser\n2. It's from a supported platform\n3. There are no extra spaces";
+    } else if (
+      errorMsg.includes("timeout") ||
+      errorMsg.includes("fetch failed")
+    ) {
+      helpMessage =
+        "Connection Issue\n\nTry:\n1. Check your internet connection\n2. Wait a moment and try again\n3. Try a different video";
+    } else if (errorMsg.includes("Rate limited")) {
+      helpMessage =
+        "Services Overloaded\n\nThe download services are busy.\n\nTry:\n1. Wait 30 seconds\n2. Try again\n3. Use a shorter video";
     }
 
     return res.status(503).json({
@@ -235,7 +242,7 @@ export const handleDownload: RequestHandler = async (req, res) => {
     const msg = error instanceof Error ? error.message : String(error);
 
     return res.status(500).json({
-      error: `Server error: ${msg}\n\nPlease check your internet connection and try again.`,
+      error: `Server error: ${msg}`,
     });
   }
 };
