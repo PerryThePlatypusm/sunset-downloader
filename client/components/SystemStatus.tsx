@@ -19,15 +19,33 @@ export default function SystemStatus() {
   useEffect(() => {
     const checkStatus = async () => {
       try {
-        const response = await fetch(getApiEndpoint("/api/status"));
+        // Only check status when running locally (localhost)
+        // Status endpoint doesn't exist on deployed versions (like Fly.io, Netlify)
+        const isLocal = window.location.hostname === "localhost" ||
+                        window.location.hostname === "127.0.0.1";
+
+        if (!isLocal) {
+          // Don't try to fetch status on deployed versions
+          setLoading(false);
+          return;
+        }
+
+        // Create a timeout promise
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("timeout")), 5000)
+        );
+
+        const fetchPromise = fetch(getApiEndpoint("/api/status"));
+        const response = await Promise.race([fetchPromise, timeoutPromise]) as Response;
+
         if (!response.ok) {
           throw new Error("Failed to check system status");
         }
         const data = await response.json();
         setStatus(data);
       } catch (err) {
-        console.error("[SystemStatus] Error:", err);
-        setError("Could not check system status");
+        // Silently fail - status endpoint is optional for deployed versions
+        // Just log at debug level, don't spam the console
       } finally {
         setLoading(false);
       }
