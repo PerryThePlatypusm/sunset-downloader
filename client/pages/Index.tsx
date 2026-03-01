@@ -12,7 +12,7 @@ import { usePixelAnimation } from "@/hooks/use-pixel-animation";
 import { useConfetti } from "@/hooks/use-confetti";
 import { Download, Music, Video, Zap, Check, AlertCircle } from "lucide-react";
 import { QUALITY_FORMATS } from "@/lib/urlUtils";
-import { getDownloadUrl } from "@/lib/api-config";
+import { downloadMediaAPI, downloadFile } from "@/lib/mediaapi";
 
 export default function Index() {
   const createPixels = usePixelAnimation();
@@ -93,82 +93,35 @@ export default function Index() {
     }
 
     try {
-      const requestBody = {
-        url: trimmedUrl,
-        platform: selectedPlatform || undefined,
-        quality: quality || undefined,
-        audioOnly: downloadType === "audio",
-        episodes: selectedEpisodes.length > 0 ? selectedEpisodes : undefined,
-      };
-
-      const response = await fetch(getDownloadUrl(), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      if (!response.ok) {
-        let errorMessage = `Download failed with status ${response.status}`;
-        try {
-          const errorData = await response.json();
-          if (errorData.error) {
-            errorMessage = errorData.error;
-          }
-        } catch {
-          // If response can't be parsed as JSON, use status text
-          if (response.statusText) {
-            errorMessage = `${response.status} ${response.statusText}`;
-          }
-        }
-        throw new Error(errorMessage);
-      }
-
-      // Check if response has content
-      const contentLength = response.headers.get("content-length");
-      if (contentLength === "0") {
-        throw new Error("Server returned empty response. Please try again.");
-      }
-
+      // Use MediaAPI for the download
       setDownloadStatus("downloading");
-      setDownloadProgress(50);
+      setDownloadProgress(30);
 
-      const blob = await response.blob();
+      console.log("[Download] Calling MediaAPI for URL:", trimmedUrl);
 
-      if (blob.size === 0) {
-        throw new Error("Downloaded file is empty. Please try again.");
+      // Get download link from MediaAPI
+      const mediaApiResult = await downloadMediaAPI(
+        trimmedUrl,
+        downloadType === "audio"
+      );
+
+      if (!mediaApiResult.success || !mediaApiResult.url) {
+        throw new Error(
+          mediaApiResult.error || "Failed to get download link"
+        );
       }
 
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = downloadUrl;
+      console.log("[Download] Got download link, starting file download");
+      setDownloadProgress(60);
 
-      // Get filename from Content-Disposition header or use default
-      const contentDisposition = response.headers.get("content-disposition");
-      let fileName = `media_${Date.now()}.${downloadType === "audio" ? "mp3" : "mp4"}`;
-
-      if (contentDisposition && contentDisposition.includes("filename=")) {
-        const matches = contentDisposition.match(/filename="([^"]+)"/);
-        if (matches && matches[1]) {
-          fileName = matches[1];
-        }
-      }
-
-      a.download = fileName;
-      document.body.appendChild(a);
-
-      try {
-        a.click();
-      } finally {
-        window.URL.revokeObjectURL(downloadUrl);
-        document.body.removeChild(a);
-      }
+      // Download the actual file
+      await downloadFile(mediaApiResult.url, mediaApiResult.filename || "download");
 
       setDownloadProgress(100);
       setDownloadStatus("success");
-      setDownloadedFile(a.download);
+      setDownloadedFile(mediaApiResult.filename || "download");
 
+      // Reset after success
       setTimeout(() => {
         setUrl("");
         setSelectedPlatform(null);
@@ -179,9 +132,19 @@ export default function Index() {
       }, 3000);
     } catch (error) {
       console.error("Download error:", error);
-      setErrorMessage(
-        error instanceof Error ? error.message : "An error occurred",
-      );
+      const errorMsg = error instanceof Error ? error.message : "An error occurred";
+
+      // Provide helpful error message
+      let displayError = errorMsg;
+      if (errorMsg.includes("API key")) {
+        displayError = "MediaAPI not configured. Please contact support.";
+      } else if (errorMsg.includes("quota")) {
+        displayError = "API quota exceeded. Please try again later.";
+      } else if (errorMsg.includes("Invalid URL")) {
+        displayError = "URL not supported or invalid. Please check the link.";
+      }
+
+      setErrorMessage(displayError);
       setDownloadStatus("error");
       setIsDownloading(false);
     }
