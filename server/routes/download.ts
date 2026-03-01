@@ -6,8 +6,8 @@ import { RequestHandler } from "express";
  */
 export const handleDownload: RequestHandler = async (req, res) => {
   try {
-    const body = req.body as { url: string; audioOnly?: boolean };
-    const { url, audioOnly } = body;
+    const body = req.body as { url: string; audioOnly?: boolean; quality?: string };
+    const { url, audioOnly, quality } = body;
 
     if (!url || typeof url !== "string" || !url.trim()) {
       return res.status(400).json({
@@ -17,13 +17,14 @@ export const handleDownload: RequestHandler = async (req, res) => {
 
     console.log("[Download Proxy] Processing URL:", url);
     console.log("[Download Proxy] Audio only:", audioOnly);
+    console.log("[Download Proxy] Quality:", quality);
 
     // Call y2mate API from the backend (no CORS issues)
     const y2mateUrl = "https://www.y2mate.com/mates/api/fetch";
     const params = new URLSearchParams();
     params.append("url", url.trim());
     params.append("type", audioOnly ? "audio" : "video");
-    params.append("quality", audioOnly ? "128" : "720");
+    params.append("quality", quality || (audioOnly ? "128" : "720"));
 
     console.log("[Download Proxy] Calling y2mate API...");
 

@@ -14,6 +14,7 @@ export default function Index() {
   const createConfetti = useConfetti();
   const [url, setUrl] = useState("");
   const [downloadType, setDownloadType] = useState<"video" | "audio">("video");
+  const [quality, setQuality] = useState("720");
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [downloadStatus, setDownloadStatus] = useState<
@@ -74,7 +75,8 @@ export default function Index() {
       // Get download link from MediaAPI
       const mediaApiResult = await downloadMediaAPI(
         trimmedUrl,
-        downloadType === "audio"
+        downloadType === "audio",
+        quality
       );
 
       if (!mediaApiResult.success || !mediaApiResult.url) {
@@ -96,7 +98,6 @@ export default function Index() {
       // Reset after success
       setTimeout(() => {
         setUrl("");
-        setSelectedPlatform(null);
         setDownloadStatus("idle");
         setDownloadProgress(0);
         setDownloadedFile(null);
@@ -227,7 +228,35 @@ export default function Index() {
               </div>
             </div>
 
-            {/* Platform Selector */}
+            {/* Quality Selector */}
+            <div className="mb-6">
+              <label className="block text-sunset-200 font-semibold mb-3">
+                Quality
+              </label>
+              <select
+                value={quality}
+                onChange={(e) => setQuality(e.target.value)}
+                disabled={isDownloading}
+                className="w-full p-3 rounded-lg bg-sunset-900/50 border border-sunset-700 text-sunset-200 focus:border-sunset-500 focus:outline-none cursor-pointer"
+              >
+                {downloadType === "video" ? (
+                  <>
+                    <option value="360">360p (Low Quality, Faster)</option>
+                    <option value="480">480p (Medium Quality)</option>
+                    <option value="720">720p (High Quality - Recommended)</option>
+                    <option value="1080">1080p (Very High Quality)</option>
+                  </>
+                ) : (
+                  <>
+                    <option value="128">128 kbps (Low Quality, Fast)</option>
+                    <option value="192">192 kbps (Good Quality - Recommended)</option>
+                    <option value="256">256 kbps (High Quality)</option>
+                    <option value="320">320 kbps (Highest Quality)</option>
+                  </>
+                )}
+              </select>
+            </div>
+
             {/* Error Message */}
             {downloadStatus === "error" && errorMessage && (
               <div className="mb-6 p-4 rounded-lg bg-red-500/20 border border-red-500/50 flex gap-3 items-start">

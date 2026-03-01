@@ -16,10 +16,12 @@ export interface DownloadResult {
  */
 export async function downloadMediaAPI(
   url: string,
-  audioOnly: boolean = false
+  audioOnly: boolean = false,
+  quality: string = "720"
 ): Promise<DownloadResult> {
   try {
     console.log(`[Download] Calling backend proxy for: ${url}`);
+    console.log(`[Download] Quality: ${quality}, Audio only: ${audioOnly}`);
 
     const response = await fetch("/api/download", {
       method: "POST",
@@ -29,6 +31,7 @@ export async function downloadMediaAPI(
       body: JSON.stringify({
         url: url.trim(),
         audioOnly: audioOnly,
+        quality: quality,
       }),
     });
 
