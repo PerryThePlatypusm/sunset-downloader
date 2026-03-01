@@ -6,8 +6,13 @@ import { RequestHandler } from "express";
  */
 export const handleDownload: RequestHandler = async (req, res) => {
   try {
-    const body = req.body as { url: string; audioOnly?: boolean; quality?: string };
-    const { url, audioOnly, quality } = body;
+    const body = req.body as {
+      url: string;
+      audioOnly?: boolean;
+      quality?: string;
+      platform?: string;
+    };
+    const { url, audioOnly, quality, platform } = body;
 
     if (!url || typeof url !== "string" || !url.trim()) {
       return res.status(400).json({
@@ -16,6 +21,7 @@ export const handleDownload: RequestHandler = async (req, res) => {
     }
 
     console.log("[Download Proxy] Processing URL:", url);
+    console.log("[Download Proxy] Platform:", platform);
     console.log("[Download Proxy] Audio only:", audioOnly);
     console.log("[Download Proxy] Quality:", quality);
 
@@ -24,7 +30,13 @@ export const handleDownload: RequestHandler = async (req, res) => {
     const params = new URLSearchParams();
     params.append("url", url.trim());
     params.append("type", audioOnly ? "audio" : "video");
-    params.append("quality", quality || (audioOnly ? "128" : "720"));
+
+    // Handle quality parameter - map lossless to highest quality
+    let qualityParam = quality || (audioOnly ? "128" : "720");
+    if (qualityParam.toLowerCase() === "flac") {
+      qualityParam = "320"; // Use highest quality as fallback for lossless
+    }
+    params.append("quality", qualityParam);
 
     console.log("[Download Proxy] Calling y2mate API...");
 

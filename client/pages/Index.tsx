@@ -7,7 +7,7 @@ import TOSNotification from "@/components/TOSNotification";
 import { usePixelAnimation } from "@/hooks/use-pixel-animation";
 import { useConfetti } from "@/hooks/use-confetti";
 import { Download, Music, Video, Zap, Check, AlertCircle } from "lucide-react";
-import { downloadMediaAPI, downloadFile } from "@/lib/mediaapi";
+import { downloadMediaAPI, downloadFile, detectPlatform, SUPPORTED_PLATFORMS } from "@/lib/mediaapi";
 
 export default function Index() {
   const createPixels = usePixelAnimation();
@@ -15,6 +15,8 @@ export default function Index() {
   const [url, setUrl] = useState("");
   const [downloadType, setDownloadType] = useState<"video" | "audio">("video");
   const [quality, setQuality] = useState("720");
+  const [detectedPlatform, setDetectedPlatform] = useState<string | null>(null);
+  const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [downloadStatus, setDownloadStatus] = useState<
@@ -28,6 +30,21 @@ export default function Index() {
       createConfetti();
     }
   }, [downloadStatus, createConfetti]);
+
+  // Auto-detect platform when URL changes
+  useEffect(() => {
+    if (url.trim()) {
+      const detected = detectPlatform(url);
+      setDetectedPlatform(detected);
+      // Don't auto-select, just detect
+      if (!selectedPlatform) {
+        setSelectedPlatform(detected === "unknown" ? null : detected);
+      }
+    } else {
+      setDetectedPlatform(null);
+      setSelectedPlatform(null);
+    }
+  }, [url]);
 
   const handleDownload = async () => {
     const trimmedUrl = url.trim();
@@ -76,7 +93,8 @@ export default function Index() {
       const mediaApiResult = await downloadMediaAPI(
         trimmedUrl,
         downloadType === "audio",
-        quality
+        quality,
+        selectedPlatform || undefined
       );
 
       if (!mediaApiResult.success || !mediaApiResult.url) {
@@ -228,6 +246,33 @@ export default function Index() {
               </div>
             </div>
 
+            {/* Platform Selector */}
+            <div className="mb-6">
+              <label className="block text-sunset-200 font-semibold mb-3">
+                {detectedPlatform && detectedPlatform !== "unknown"
+                  ? `Platform (Auto-Detected: ${SUPPORTED_PLATFORMS.find(p => p.value === detectedPlatform)?.label || detectedPlatform})`
+                  : "Platform (Auto-Detected)"}
+              </label>
+              <select
+                value={selectedPlatform || ""}
+                onChange={(e) => setSelectedPlatform(e.target.value || null)}
+                disabled={isDownloading}
+                className="w-full p-3 rounded-lg bg-sunset-900/50 border border-sunset-700 text-sunset-200 focus:border-sunset-500 focus:outline-none cursor-pointer"
+              >
+                <option value="">Auto-Detect</option>
+                {SUPPORTED_PLATFORMS.map((platform) => (
+                  <option key={platform.value} value={platform.value}>
+                    {platform.label}
+                  </option>
+                ))}
+              </select>
+              {detectedPlatform && detectedPlatform !== "unknown" && (
+                <p className="text-xs text-sunset-400 mt-2">
+                  ✓ Platform auto-detected from URL
+                </p>
+              )}
+            </div>
+
             {/* Quality Selector */}
             <div className="mb-6">
               <label className="block text-sunset-200 font-semibold mb-3">
@@ -241,17 +286,22 @@ export default function Index() {
               >
                 {downloadType === "video" ? (
                   <>
+                    <option value="240">240p (Ultra Low, Fastest)</option>
                     <option value="360">360p (Low Quality, Faster)</option>
                     <option value="480">480p (Medium Quality)</option>
                     <option value="720">720p (High Quality - Recommended)</option>
-                    <option value="1080">1080p (Very High Quality)</option>
+                    <option value="1080">1080p (Very High Quality, 2K)</option>
+                    <option value="1440">1440p (2K Ultra HD)</option>
+                    <option value="2160">2160p (4K Ultra HD)</option>
+                    <option value="4320">4320p (8K Ultra HD)</option>
                   </>
                 ) : (
                   <>
                     <option value="128">128 kbps (Low Quality, Fast)</option>
                     <option value="192">192 kbps (Good Quality - Recommended)</option>
                     <option value="256">256 kbps (High Quality)</option>
-                    <option value="320">320 kbps (Highest Quality)</option>
+                    <option value="320">320 kbps (Very High Quality)</option>
+                    <option value="flac">FLAC (Lossless Audio)</option>
                   </>
                 )}
               </select>

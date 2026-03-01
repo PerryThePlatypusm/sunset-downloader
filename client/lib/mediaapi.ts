@@ -11,16 +11,65 @@ export interface DownloadResult {
 }
 
 /**
+ * Detect platform from URL
+ */
+export function detectPlatform(url: string): string {
+  const lowerUrl = url.toLowerCase();
+
+  if (lowerUrl.includes("youtube.com") || lowerUrl.includes("youtu.be")) {
+    return "youtube";
+  } else if (lowerUrl.includes("instagram.com")) {
+    return "instagram";
+  } else if (lowerUrl.includes("tiktok.com")) {
+    return "tiktok";
+  } else if (lowerUrl.includes("twitter.com") || lowerUrl.includes("x.com")) {
+    return "twitter";
+  } else if (lowerUrl.includes("facebook.com")) {
+    return "facebook";
+  } else if (lowerUrl.includes("spotify.com")) {
+    return "spotify";
+  } else if (lowerUrl.includes("soundcloud.com")) {
+    return "soundcloud";
+  } else if (lowerUrl.includes("twitch.tv")) {
+    return "twitch";
+  } else if (lowerUrl.includes("reddit.com")) {
+    return "reddit";
+  } else if (lowerUrl.includes("pinterest.com")) {
+    return "pinterest";
+  }
+
+  return "unknown";
+}
+
+export const SUPPORTED_PLATFORMS = [
+  { value: "youtube", label: "YouTube" },
+  { value: "instagram", label: "Instagram" },
+  { value: "tiktok", label: "TikTok" },
+  { value: "twitter", label: "Twitter/X" },
+  { value: "facebook", label: "Facebook" },
+  { value: "spotify", label: "Spotify" },
+  { value: "soundcloud", label: "SoundCloud" },
+  { value: "twitch", label: "Twitch" },
+  { value: "reddit", label: "Reddit" },
+  { value: "pinterest", label: "Pinterest" },
+];
+
+/**
  * Download media - calls backend proxy endpoint
  * Backend handles the API call to avoid CORS issues
  */
 export async function downloadMediaAPI(
   url: string,
   audioOnly: boolean = false,
-  quality: string = "720"
+  quality: string = "720",
+  platform?: string
 ): Promise<DownloadResult> {
   try {
+    // Auto-detect platform if not provided
+    const detectedPlatform = platform || detectPlatform(url);
+
     console.log(`[Download] Calling backend proxy for: ${url}`);
+    console.log(`[Download] Platform: ${detectedPlatform}`);
     console.log(`[Download] Quality: ${quality}, Audio only: ${audioOnly}`);
 
     const response = await fetch("/api/download", {
@@ -32,6 +81,7 @@ export async function downloadMediaAPI(
         url: url.trim(),
         audioOnly: audioOnly,
         quality: quality,
+        platform: detectedPlatform,
       }),
     });
 
