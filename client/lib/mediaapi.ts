@@ -112,17 +112,22 @@ export async function downloadMediaAPI(
     console.error("[Download] Error:", errorMessage);
 
     let helpfulMessage = errorMessage;
+
+    // Map backend error messages to user-friendly ones
     if (errorMessage.includes("Failed to fetch")) {
       helpfulMessage = "Connection error. Please check your internet and try again.";
+    } else if (errorMessage.includes("unavailable")) {
+      helpfulMessage = "Download services are temporarily unavailable. Try again in a few moments or use online tools like SaveFrom.net";
+    } else if (errorMessage.includes("blocking")) {
+      helpfulMessage = "This video service is blocking downloads temporarily. Please try again later.";
+    } else if (errorMessage.includes("overloaded")) {
+      helpfulMessage = "Download services are overloaded. Please wait a few minutes and try again.";
+    } else if (errorMessage.includes("restrictions")) {
+      helpfulMessage = "Your network may have restrictions on downloads. Try again or use a different network.";
     } else if (errorMessage.includes("404")) {
       helpfulMessage = "Video not found. Please check the URL.";
     } else if (errorMessage.includes("not found") || errorMessage.includes("Invalid")) {
       helpfulMessage = "URL not supported or video not accessible.";
-    }
-
-    // Add helpful suggestions based on error
-    if (helpfulMessage.includes("service") || helpfulMessage.includes("unavailable")) {
-      helpfulMessage += " All download services are temporarily unavailable. This sometimes happens if servers are overloaded. Please try again in a few moments.";
     }
 
     return {

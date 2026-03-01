@@ -1,8 +1,8 @@
 import { RequestHandler } from "express";
 
 /**
- * Download handler with multiple fallback options
- * Tries multiple APIs to ensure reliability
+ * Download handler - Uses simple, direct approach
+ * Avoids complex API dependencies
  */
 
 interface DownloadResponse {
@@ -12,152 +12,136 @@ interface DownloadResponse {
 }
 
 /**
- * Try y2mate API (Primary option)
+ * Simple wrapper for fetch with timeout and error handling
  */
-async function tryY2mate(
+async function fetchWithTimeout(
   url: string,
-  audioOnly: boolean,
-  quality: string
-): Promise<DownloadResponse> {
+  options: RequestInit = {},
+  timeoutMs = 8000
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
   try {
-    console.log("[Y2mate] Attempting download...");
-
-    const y2mateUrl = "https://www.y2mate.com/mates/api/fetch";
-    const params = new URLSearchParams();
-    params.append("url", url.trim());
-    params.append("type", audioOnly ? "audio" : "video");
-    params.append("quality", quality);
-
-    const response = await fetch(y2mateUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-      },
-      body: params.toString(),
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
     });
-
-    if (!response.ok) {
-      console.log(`[Y2mate] Failed with status ${response.status}`);
-      return { error: `Y2mate error: ${response.status}` };
-    }
-
-    const data = await response.json();
-
-    if (data.error) {
-      console.log(`[Y2mate] Error in response: ${data.error}`);
-      return { error: data.error };
-    }
-
-    if (!data.url) {
-      console.log("[Y2mate] No URL in response");
-      return { error: "No download link received" };
-    }
-
-    console.log("[Y2mate] Success!");
-    return {
-      url: data.url,
-      filename: data.filename || `download_${Date.now()}`,
-    };
+    clearTimeout(timeoutId);
+    return response;
   } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    console.log(`[Y2mate] Exception: ${msg}`);
-    return { error: msg };
+    clearTimeout(timeoutId);
+    throw error;
   }
 }
 
 /**
- * Try Yt-dlp API (Alternative option)
+ * Try generic video download service
  */
-async function tryYtdlpApi(
-  url: string,
-  audioOnly: boolean,
-  quality: string
-): Promise<DownloadResponse> {
-  try {
-    console.log("[YtdlpAPI] Attempting download...");
-
-    const apiUrl = "https://api.cobalt.tools/api/json";
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({
-        url: url.trim(),
-        videoAudio: audioOnly ? "audio" : "video",
-        audioFormat: audioOnly ? "mp3" : null,
-      }),
-    });
-
-    if (!response.ok) {
-      console.log(`[YtdlpAPI] Failed with status ${response.status}`);
-      return { error: `API error: ${response.status}` };
-    }
-
-    const data = await response.json();
-
-    if (data.error) {
-      console.log(`[YtdlpAPI] Error: ${data.error}`);
-      return { error: data.error };
-    }
-
-    if (!data.url) {
-      console.log("[YtdlpAPI] No URL in response");
-      return { error: "No download link" };
-    }
-
-    console.log("[YtdlpAPI] Success!");
-    return {
-      url: data.url,
-      filename: `download_${Date.now()}`,
-    };
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    console.log(`[YtdlpAPI] Exception: ${msg}`);
-    return { error: msg };
-  }
-}
-
-/**
- * Try AllTube API (Third fallback)
- */
-async function tryAllTubeApi(
+async function tryGenericDownload(
   url: string,
   audioOnly: boolean
 ): Promise<DownloadResponse> {
   try {
-    console.log("[AllTube] Attempting download...");
+    console.log("[Generic] Attempting direct download...");
 
-    const params = new URLSearchParams();
-    params.append("url", url.trim());
-    params.append("audio", audioOnly ? "1" : "0");
+    // Try to construct a direct download-friendly URL
+    // For YouTube, we'll use a simpler approach
+    const encodedUrl = encodeURIComponent(url.trim());
 
-    const response = await fetch(
-      `https://alltube.tv/json/info?${params.toString()}`,
-      {
+    // Try SaveFrom.net API
+    const savefromUrl = `https://savefrom.net/api/v1/?url=${encodedUrl}&type=json`;
+
+    try {
+      const response = await fetchWithTimeout(savefromUrl, {
         headers: {
           "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         },
-      }
-    );
+      });
 
-    if (!response.ok) {
-      console.log(`[AllTube] Failed with status ${response.status}`);
-      return { error: `AllTube error: ${response.status}` };
+      if (response.ok) {
+        const data = await response.json();
+        if (data.url || data.download_url) {
+          console.log("[Generic] Got download URL from SaveFrom");
+          return {
+            url: data.url || data.download_url,
+            filename: `download_${Date.now()}`,
+          };
+        }
+      }
+    } catch (e) {
+      console.log(`[Generic/SaveFrom] Failed: ${e instanceof Error ? e.message : String(e)}`);
     }
 
-    console.log("[AllTube] Success!");
+    // Fallback: Return instructions for user to use online tools
+    console.log("[Generic] Returning instructions for alternative download");
     return {
-      url: url,
-      filename: `download_${Date.now()}`,
+      error:
+        "Download services are temporarily unavailable. Please try: 1) Refreshing the page, 2) Waiting a few minutes, 3) Using online tools like SaveFrom.net, Y2Mate, or TubeMate",
     };
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    console.log(`[AllTube] Exception: ${msg}`);
+    console.log(`[Generic] Exception: ${msg}`);
+    return { error: msg };
+  }
+}
+
+/**
+ * Try simple proxy approach for known platforms
+ */
+async function trySimpleProxy(
+  url: string,
+  audioOnly: boolean,
+  quality: string
+): Promise<DownloadResponse> {
+  try {
+    console.log("[SimpleProxy] Attempting download...");
+
+    // For YouTube, use a simple pattern
+    if (url.includes("youtube.com") || url.includes("youtu.be")) {
+      // Try simple YouTube proxy
+      const videoId = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/)?.[1];
+
+      if (videoId) {
+        // Try multiple simple proxy services
+        const proxyUrls = [
+          `https://www.y2meta.com/api/button/check?url=${encodeURIComponent(url)}&lang=en`,
+          `https://pytube-api.herokuapp.com/download?url=${encodeURIComponent(url)}`,
+        ];
+
+        for (const proxyUrl of proxyUrls) {
+          try {
+            const response = await fetchWithTimeout(proxyUrl, {
+              headers: {
+                "User-Agent":
+                  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+              },
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              if (data.url || data.link) {
+                console.log("[SimpleProxy] Got URL from proxy service");
+                return {
+                  url: data.url || data.link,
+                  filename: `download_${Date.now()}`,
+                };
+              }
+            }
+          } catch (e) {
+            console.log(
+              `[SimpleProxy] Proxy failed: ${e instanceof Error ? e.message : String(e)}`
+            );
+          }
+        }
+      }
+    }
+
+    return { error: "Could not generate download link" };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.log(`[SimpleProxy] Exception: ${msg}`);
     return { error: msg };
   }
 }
@@ -179,17 +163,16 @@ export const handleDownload: RequestHandler = async (req, res) => {
     }
 
     console.log("[Download] Processing URL:", url);
-    console.log("[Download] Platform:", platform);
     console.log("[Download] Type:", audioOnly ? "audio" : "video");
     console.log("[Download] Quality:", quality);
 
-    // Try multiple APIs in order
-    console.log("[Download] Trying API services in order...");
+    // Try simple approaches first
+    console.log("[Download] Attempting download from URL...");
 
-    // Try Y2mate first (most reliable for YouTube)
-    let result = await tryY2mate(url, audioOnly, quality);
+    let result = await trySimpleProxy(url, audioOnly, quality);
+
     if (!result.error && result.url) {
-      console.log("[Download] Successfully got download link from Y2mate");
+      console.log("[Download] Successfully got download link");
       return res.json({
         success: true,
         url: result.url,
@@ -197,12 +180,12 @@ export const handleDownload: RequestHandler = async (req, res) => {
       });
     }
 
-    console.log("[Download] Y2mate failed, trying alternative APIs...");
+    console.log("[Download] Simple proxy failed, trying generic approach...");
 
-    // Try Yt-dlp API as fallback
-    result = await tryYtdlpApi(url, audioOnly, quality);
+    result = await tryGenericDownload(url, audioOnly);
+
     if (!result.error && result.url) {
-      console.log("[Download] Successfully got download link from YtdlpAPI");
+      console.log("[Download] Successfully got download link");
       return res.json({
         success: true,
         url: result.url,
@@ -210,34 +193,26 @@ export const handleDownload: RequestHandler = async (req, res) => {
       });
     }
 
-    console.log("[Download] YtdlpAPI failed, trying AllTube...");
+    // All attempts failed - provide helpful message
+    console.error("[Download] All download methods failed");
 
-    // Try AllTube as final fallback
-    result = await tryAllTubeApi(url, audioOnly);
-    if (!result.error && result.url) {
-      console.log("[Download] Successfully got download link from AllTube");
-      return res.json({
-        success: true,
-        url: result.url,
-        filename: result.filename,
-      });
-    }
-
-    // All services failed
-    console.error("[Download] All download services failed");
-    const errorMsg =
+    const helpfulMessage =
       result.error ||
-      "All download services are currently unavailable. Please try again in a moment.";
+      "Download services are temporarily unavailable. This can happen when:\n" +
+      "1. Video service is blocking downloads temporarily\n" +
+      "2. Download services are overloaded\n" +
+      "3. Your network has restrictions\n\n" +
+      "Try again in a few moments, or use online tools like SaveFrom.net or Y2Mate";
 
     return res.status(503).json({
-      error: errorMsg,
+      error: helpfulMessage,
     });
   } catch (error) {
     console.error("[Download] Exception:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
 
     return res.status(500).json({
-      error: `Download service error: ${errorMessage}`,
+      error: `Download error: ${errorMessage}. Please try again or check your internet connection.`,
     });
   }
 };
