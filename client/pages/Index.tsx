@@ -2,26 +2,18 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import PlatformSelector from "@/components/PlatformSelector";
-import QualitySelector from "@/components/QualitySelector";
-import SpotifyQualitySelector from "@/components/SpotifyQualitySelector";
-import EpisodeSelector from "@/components/EpisodeSelector";
 import DownloadProgress from "@/components/DownloadProgress";
 import TOSNotification from "@/components/TOSNotification";
 import { usePixelAnimation } from "@/hooks/use-pixel-animation";
 import { useConfetti } from "@/hooks/use-confetti";
 import { Download, Music, Video, Zap, Check, AlertCircle } from "lucide-react";
-import { QUALITY_FORMATS } from "@/lib/urlUtils";
 import { downloadMediaAPI, downloadFile } from "@/lib/mediaapi";
 
 export default function Index() {
   const createPixels = usePixelAnimation();
   const createConfetti = useConfetti();
   const [url, setUrl] = useState("");
-  const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
   const [downloadType, setDownloadType] = useState<"video" | "audio">("video");
-  const [quality, setQuality] = useState("1080");
-  const [selectedEpisodes, setSelectedEpisodes] = useState<number[]>([]);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [downloadStatus, setDownloadStatus] = useState<
@@ -35,15 +27,6 @@ export default function Index() {
       createConfetti();
     }
   }, [downloadStatus, createConfetti]);
-
-  // Reset quality to sensible default when download type changes
-  useEffect(() => {
-    if (downloadType === "video") {
-      setQuality("1080");
-    } else {
-      setQuality("320");
-    }
-  }, [downloadType]);
 
   const handleDownload = async () => {
     const trimmedUrl = url.trim();
@@ -81,17 +64,6 @@ export default function Index() {
     }
 
     // URL is valid - proceed with download
-    // Backend will handle platform detection and validation
-
-    const isAnimePlatform =
-      selectedPlatform === "crunchyroll" || selectedPlatform === "hianime";
-    if (isAnimePlatform && selectedEpisodes.length === 0) {
-      setErrorMessage("Please select at least one episode to download");
-      setDownloadStatus("error");
-      setIsDownloading(false);
-      return;
-    }
-
     try {
       // Use MediaAPI for the download
       setDownloadStatus("downloading");
@@ -256,61 +228,6 @@ export default function Index() {
             </div>
 
             {/* Platform Selector */}
-            <div className="mb-6">
-              <label className="block text-sunset-200 font-semibold mb-3">
-                Platform (Optional - Auto-Detected)
-              </label>
-              <PlatformSelector
-                selectedPlatform={selectedPlatform}
-                onSelectPlatform={setSelectedPlatform}
-              />
-            </div>
-
-            {/* Quality Selector */}
-            {downloadType === "video" && (
-              <div className="mb-6">
-                <label className="block text-sunset-200 font-semibold mb-3">
-                  Video Quality
-                </label>
-                <QualitySelector
-                  quality={quality}
-                  onQualityChange={setQuality}
-                  type="video"
-                />
-              </div>
-            )}
-
-            {downloadType === "audio" && selectedPlatform === "spotify" && (
-              <div className="mb-6">
-                <label className="block text-sunset-200 font-semibold mb-3">
-                  Spotify Audio Quality
-                </label>
-                <SpotifyQualitySelector
-                  quality={quality}
-                  onQualityChange={setQuality}
-                />
-              </div>
-            )}
-
-            {downloadType === "audio" && selectedPlatform !== "spotify" && (
-              <div className="mb-6">
-                <label className="block text-sunset-200 font-semibold mb-3">
-                  Audio Quality
-                </label>
-                <QualitySelector
-                  quality={quality}
-                  onQualityChange={setQuality}
-                  type="audio"
-                />
-              </div>
-            )}
-
-            {/* Episode Selector for Anime Platforms */}
-            <EpisodeSelector
-              platform={selectedPlatform}
-              onSelect={setSelectedEpisodes}
-            />
-
             {/* Error Message */}
             {downloadStatus === "error" && errorMessage && (
               <div className="mb-6 p-4 rounded-lg bg-red-500/20 border border-red-500/50 flex gap-3 items-start">
