@@ -113,21 +113,21 @@ export async function downloadMediaAPI(
 
     let helpfulMessage = errorMessage;
 
-    // Map backend error messages to user-friendly ones
-    if (errorMessage.includes("Failed to fetch")) {
-      helpfulMessage = "Connection error. Please check your internet and try again.";
-    } else if (errorMessage.includes("unavailable")) {
-      helpfulMessage = "Download services are temporarily unavailable. Try again in a few moments or use online tools like SaveFrom.net";
-    } else if (errorMessage.includes("blocking")) {
-      helpfulMessage = "This video service is blocking downloads temporarily. Please try again later.";
-    } else if (errorMessage.includes("overloaded")) {
-      helpfulMessage = "Download services are overloaded. Please wait a few minutes and try again.";
-    } else if (errorMessage.includes("restrictions")) {
-      helpfulMessage = "Your network may have restrictions on downloads. Try again or use a different network.";
-    } else if (errorMessage.includes("404")) {
+    // Clean up and improve error messages
+    if (helpfulMessage.includes("Download Failed")) {
+      // Already a good message from backend, keep it
+    } else if (helpfulMessage.includes("Server error")) {
+      // Already a good message from backend, keep it
+    } else if (helpfulMessage.includes("Failed to fetch") || helpfulMessage.includes("timeout")) {
+      helpfulMessage = "Connection timeout. Check your internet connection and try again.";
+    } else if (helpfulMessage.includes("not available")) {
+      helpfulMessage = "Video is not available or has been removed.";
+    } else if (helpfulMessage.includes("not found")) {
       helpfulMessage = "Video not found. Please check the URL.";
-    } else if (errorMessage.includes("not found") || errorMessage.includes("Invalid")) {
-      helpfulMessage = "URL not supported or video not accessible.";
+    } else if (helpfulMessage.includes("age-restricted")) {
+      helpfulMessage = "This video is age-restricted and cannot be downloaded.";
+    } else if (helpfulMessage.includes("private")) {
+      helpfulMessage = "This video is private and cannot be downloaded.";
     }
 
     return {

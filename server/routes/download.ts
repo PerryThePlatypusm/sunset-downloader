@@ -1,8 +1,8 @@
 import { RequestHandler } from "express";
 
 /**
- * Download handler - Uses simple, direct approach
- * Avoids complex API dependencies
+ * Download handler using cobalt.tools API
+ * Reliable, well-documented video/audio download service
  */
 
 interface DownloadResponse {
@@ -12,136 +12,144 @@ interface DownloadResponse {
 }
 
 /**
- * Simple wrapper for fetch with timeout and error handling
+ * Fetch with proper error handling and timeout
  */
 async function fetchWithTimeout(
   url: string,
   options: RequestInit = {},
-  timeoutMs = 8000
+  timeoutMs = 15000
 ): Promise<Response> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  const timeoutPromise = new Promise<Response>((_, reject) =>
+    (timeoutId = setTimeout(
+      () => reject(new Error("Request timeout")),
+      timeoutMs
+    ))
+  );
 
   try {
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-    return response;
+    const response = await Promise.race([fetch(url, options), timeoutPromise]);
+    if (timeoutId) clearTimeout(timeoutId);
+    return response as Response;
   } catch (error) {
-    clearTimeout(timeoutId);
+    if (timeoutId) clearTimeout(timeoutId);
     throw error;
   }
 }
 
 /**
- * Try generic video download service
+ * Use cobalt.tools API (most reliable)
  */
-async function tryGenericDownload(
-  url: string,
-  audioOnly: boolean
-): Promise<DownloadResponse> {
-  try {
-    console.log("[Generic] Attempting direct download...");
-
-    // Try to construct a direct download-friendly URL
-    // For YouTube, we'll use a simpler approach
-    const encodedUrl = encodeURIComponent(url.trim());
-
-    // Try SaveFrom.net API
-    const savefromUrl = `https://savefrom.net/api/v1/?url=${encodedUrl}&type=json`;
-
-    try {
-      const response = await fetchWithTimeout(savefromUrl, {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.url || data.download_url) {
-          console.log("[Generic] Got download URL from SaveFrom");
-          return {
-            url: data.url || data.download_url,
-            filename: `download_${Date.now()}`,
-          };
-        }
-      }
-    } catch (e) {
-      console.log(`[Generic/SaveFrom] Failed: ${e instanceof Error ? e.message : String(e)}`);
-    }
-
-    // Fallback: Return instructions for user to use online tools
-    console.log("[Generic] Returning instructions for alternative download");
-    return {
-      error:
-        "Download services are temporarily unavailable. Please try: 1) Refreshing the page, 2) Waiting a few minutes, 3) Using online tools like SaveFrom.net, Y2Mate, or TubeMate",
-    };
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    console.log(`[Generic] Exception: ${msg}`);
-    return { error: msg };
-  }
-}
-
-/**
- * Try simple proxy approach for known platforms
- */
-async function trySimpleProxy(
+async function downloadWithCobalt(
   url: string,
   audioOnly: boolean,
   quality: string
 ): Promise<DownloadResponse> {
   try {
-    console.log("[SimpleProxy] Attempting download...");
+    console.log("[Cobalt] Attempting download...");
 
-    // For YouTube, use a simple pattern
-    if (url.includes("youtube.com") || url.includes("youtu.be")) {
-      // Try simple YouTube proxy
-      const videoId = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/)?.[1];
+    const response = await fetchWithTimeout(
+      "https://api.cobalt.tools/api/json",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          url: url.trim(),
+          videoAudio: audioOnly ? "audio" : "video",
+          audioFormat: audioOnly ? "mp3" : "mp4",
+          vQuality: audioOnly ? "audio" : quality,
+        }),
+      },
+      15000
+    );
 
-      if (videoId) {
-        // Try multiple simple proxy services
-        const proxyUrls = [
-          `https://www.y2meta.com/api/button/check?url=${encodeURIComponent(url)}&lang=en`,
-          `https://pytube-api.herokuapp.com/download?url=${encodeURIComponent(url)}`,
-        ];
-
-        for (const proxyUrl of proxyUrls) {
-          try {
-            const response = await fetchWithTimeout(proxyUrl, {
-              headers: {
-                "User-Agent":
-                  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-              },
-            });
-
-            if (response.ok) {
-              const data = await response.json();
-              if (data.url || data.link) {
-                console.log("[SimpleProxy] Got URL from proxy service");
-                return {
-                  url: data.url || data.link,
-                  filename: `download_${Date.now()}`,
-                };
-              }
-            }
-          } catch (e) {
-            console.log(
-              `[SimpleProxy] Proxy failed: ${e instanceof Error ? e.message : String(e)}`
-            );
-          }
-        }
-      }
+    if (!response.ok) {
+      console.log(`[Cobalt] HTTP ${response.status}`);
+      return { error: `Service error: ${response.status}` };
     }
 
-    return { error: "Could not generate download link" };
+    const data = await response.json();
+
+    if (data.error) {
+      console.log(`[Cobalt] API error: ${data.error}`);
+      return { error: `Video not available: ${data.error}` };
+    }
+
+    if (!data.url) {
+      console.log("[Cobalt] No URL in response");
+      return { error: "No download URL generated" };
+    }
+
+    console.log("[Cobalt] Success!");
+    return {
+      url: data.url,
+      filename: data.filename || `download_${Date.now()}`,
+    };
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    console.log(`[SimpleProxy] Exception: ${msg}`);
+    console.log(`[Cobalt] Error: ${msg}`);
+    return { error: msg };
+  }
+}
+
+/**
+ * Try direct y2mate endpoint as fallback
+ */
+async function downloadWithY2mate(
+  url: string,
+  audioOnly: boolean,
+  quality: string
+): Promise<DownloadResponse> {
+  try {
+    console.log("[Y2mate] Attempting download...");
+
+    const params = new URLSearchParams();
+    params.append("url", url.trim());
+    params.append("type", audioOnly ? "audio" : "video");
+    params.append("quality", quality);
+
+    const response = await fetchWithTimeout(
+      "https://www.y2mate.com/mates/api/fetch",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        },
+        body: params.toString(),
+      },
+      15000
+    );
+
+    if (!response.ok) {
+      console.log(`[Y2mate] HTTP ${response.status}`);
+      return { error: `Service error: ${response.status}` };
+    }
+
+    const data = await response.json();
+
+    if (data.error) {
+      console.log(`[Y2mate] API error: ${data.error}`);
+      return { error: data.error };
+    }
+
+    if (!data.url) {
+      console.log("[Y2mate] No URL in response");
+      return { error: "No download link" };
+    }
+
+    console.log("[Y2mate] Success!");
+    return {
+      url: data.url,
+      filename: data.filename || `download_${Date.now()}`,
+    };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.log(`[Y2mate] Error: ${msg}`);
     return { error: msg };
   }
 }
@@ -154,7 +162,7 @@ export const handleDownload: RequestHandler = async (req, res) => {
       quality?: string;
       platform?: string;
     };
-    const { url, audioOnly = false, quality = "720", platform } = body;
+    const { url, audioOnly = false, quality = "720" } = body;
 
     if (!url || typeof url !== "string" || !url.trim()) {
       return res.status(400).json({
@@ -162,17 +170,16 @@ export const handleDownload: RequestHandler = async (req, res) => {
       });
     }
 
-    console.log("[Download] Processing URL:", url);
-    console.log("[Download] Type:", audioOnly ? "audio" : "video");
+    console.log("[Download] Processing:", url);
+    console.log("[Download] Format:", audioOnly ? "audio" : "video");
     console.log("[Download] Quality:", quality);
 
-    // Try simple approaches first
-    console.log("[Download] Attempting download from URL...");
-
-    let result = await trySimpleProxy(url, audioOnly, quality);
+    // Try Cobalt first (most reliable)
+    console.log("[Download] Trying Cobalt API...");
+    let result = await downloadWithCobalt(url, audioOnly, quality);
 
     if (!result.error && result.url) {
-      console.log("[Download] Successfully got download link");
+      console.log("[Download] Success with Cobalt!");
       return res.json({
         success: true,
         url: result.url,
@@ -180,12 +187,13 @@ export const handleDownload: RequestHandler = async (req, res) => {
       });
     }
 
-    console.log("[Download] Simple proxy failed, trying generic approach...");
+    console.log("[Download] Cobalt failed, trying Y2mate...");
 
-    result = await tryGenericDownload(url, audioOnly);
+    // Try Y2mate as fallback
+    result = await downloadWithY2mate(url, audioOnly, quality);
 
     if (!result.error && result.url) {
-      console.log("[Download] Successfully got download link");
+      console.log("[Download] Success with Y2mate!");
       return res.json({
         success: true,
         url: result.url,
@@ -193,32 +201,25 @@ export const handleDownload: RequestHandler = async (req, res) => {
       });
     }
 
-    // All attempts failed - provide helpful message
-    console.error("[Download] All download methods failed");
-
-    const helpfulMessage =
-      result.error ||
-      "Download services are temporarily unavailable. This can happen when:\n" +
-      "1. Video service is blocking downloads temporarily\n" +
-      "2. Download services are overloaded\n" +
-      "3. Your network has restrictions\n\n" +
-      "Try again in a few moments, or use online tools like SaveFrom.net or Y2Mate";
+    // Both failed - provide helpful error
+    console.error("[Download] All services failed");
+    const errorMsg = result.error || "Unable to download from this URL";
 
     return res.status(503).json({
-      error: helpfulMessage,
+      error: `Download Failed: ${errorMsg}\n\nPlease check:\n1. URL is correct\n2. Video is public and not age-restricted\n3. Try again in a moment - services may be temporarily overloaded`,
     });
   } catch (error) {
     console.error("[Download] Exception:", error);
-    const errorMessage = error instanceof Error ? error.message : String(error);
+    const msg = error instanceof Error ? error.message : String(error);
 
     return res.status(500).json({
-      error: `Download error: ${errorMessage}. Please try again or check your internet connection.`,
+      error: `Server error: ${msg}\n\nPlease check your internet connection and try again.`,
     });
   }
 };
 
 /**
- * Validate URL endpoint
+ * Validate URL
  */
 export const validateUrl: RequestHandler = (req, res) => {
   try {
