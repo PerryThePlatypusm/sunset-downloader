@@ -1,6 +1,6 @@
 /**
- * MediaAPI Integration
- * Handles downloads from 1000+ platforms via RapidAPI MediaAPI
+ * Download API Integration
+ * Uses backend proxy to avoid CORS issues
  */
 
 export interface DownloadResult {
@@ -8,119 +8,63 @@ export interface DownloadResult {
   url?: string;
   filename?: string;
   error?: string;
-  mimeType?: string;
 }
 
 /**
- * No API key needed! Uses public download services
- */
-
-/**
- * Detect platform from URL
- */
-function detectPlatform(url: string): string {
-  const lowerUrl = url.toLowerCase();
-  
-  if (lowerUrl.includes("youtube") || lowerUrl.includes("youtu.be")) {
-    return "youtube";
-  } else if (lowerUrl.includes("instagram")) {
-    return "instagram";
-  } else if (lowerUrl.includes("tiktok")) {
-    return "tiktok";
-  } else if (lowerUrl.includes("twitter") || lowerUrl.includes("x.com")) {
-    return "twitter";
-  } else if (lowerUrl.includes("facebook")) {
-    return "facebook";
-  } else if (lowerUrl.includes("spotify")) {
-    return "spotify";
-  } else if (lowerUrl.includes("soundcloud")) {
-    return "soundcloud";
-  } else if (lowerUrl.includes("twitch")) {
-    return "twitch";
-  } else if (lowerUrl.includes("reddit")) {
-    return "reddit";
-  } else if (lowerUrl.includes("pinterest")) {
-    return "pinterest";
-  }
-  
-  return "unknown";
-}
-
-/**
- * Download media using free public services (no API key needed!)
+ * Download media - calls backend proxy endpoint
+ * Backend handles the API call to avoid CORS issues
  */
 export async function downloadMediaAPI(
   url: string,
   audioOnly: boolean = false
 ): Promise<DownloadResult> {
   try {
-    const platform = detectPlatform(url);
+    console.log(`[Download] Calling backend proxy for: ${url}`);
 
-    console.log(`[Download] Processing ${platform}: ${url}`);
-
-    // Use y2mate API - works for YouTube and many platforms
-    // No authentication needed!
-    const y2mateUrl = new URL("https://www.y2mate.com/mates/api/fetch");
-
-    // Build download parameters
-    const params = new URLSearchParams();
-    params.append("url", url);
-    params.append("type", audioOnly ? "audio" : "video");
-    params.append("quality", audioOnly ? "128" : "720");
-
-    console.log(`[Download] Calling y2mate API...`);
-
-    const response = await fetch(y2mateUrl.toString(), {
+    const response = await fetch("/api/download", {
       method: "POST",
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
+        "Content-Type": "application/json",
       },
-      body: params.toString(),
+      body: JSON.stringify({
+        url: url.trim(),
+        audioOnly: audioOnly,
+      }),
     });
 
-    console.log(`[Download] Response status: ${response.status}`);
+    console.log(`[Download] Backend response status: ${response.status}`);
 
     if (!response.ok) {
-      throw new Error(`Service returned status ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      const errorMsg = errorData.error || `Error: ${response.status}`;
+      console.error("[Download] Backend error:", errorMsg);
+      throw new Error(errorMsg);
     }
 
     const data = await response.json();
 
-    console.log("[Download] Response data:", data);
+    console.log("[Download] Got download link from backend");
 
-    // Check for error in response
-    if (data.error || !data.url) {
-      const errorMsg = data.error || data.message || "Download failed";
-      throw new Error(errorMsg);
+    if (!data.url) {
+      throw new Error("No download link received");
     }
-
-    // Determine MIME type based on format
-    let mimeType = audioOnly ? "audio/mpeg" : "video/mp4";
-
-    // Generate filename
-    let filename = data.filename || data.title || `download_${Date.now()}`;
-    if (!filename.includes(".")) {
-      filename += audioOnly ? ".mp3" : ".mp4";
-    }
-
-    console.log(`[Download] Ready: ${filename}`);
 
     return {
       success: true,
       url: data.url,
-      filename: filename,
-      mimeType: mimeType,
+      filename: data.filename || `download_${Date.now()}.${audioOnly ? "mp3" : "mp4"}`,
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error("[Download] Error:", errorMessage);
 
-    // Provide helpful suggestions
     let helpfulMessage = errorMessage;
-    if (errorMessage.includes("url") || errorMessage.includes("not found")) {
-      helpfulMessage = "URL not found or not supported. Please try a different link.";
+    if (errorMessage.includes("Failed to fetch")) {
+      helpfulMessage = "Connection error. Please check your internet and try again.";
     } else if (errorMessage.includes("404")) {
-      helpfulMessage = "Video not found or has been deleted.";
+      helpfulMessage = "Video not found. Please check the URL.";
+    } else if (errorMessage.includes("not found") || errorMessage.includes("Invalid")) {
+      helpfulMessage = "URL not supported or video not accessible.";
     }
 
     return {
@@ -143,7 +87,7 @@ export async function downloadFile(
     const response = await fetch(url);
 
     if (!response.ok) {
-      throw new Error(`Failed to download file: ${response.statusText}`);
+      throw new Error(`Failed to download: ${response.statusText}`);
     }
 
     const blob = await response.blob();
@@ -152,14 +96,14 @@ export async function downloadFile(
       throw new Error("Downloaded file is empty");
     }
 
-    // Create object URL and trigger download
+    // Create download link
     const objectUrl = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = objectUrl;
     link.download = filename;
     document.body.appendChild(link);
 
-    console.log(`[Download] Triggering download for: ${filename}`);
+    console.log(`[Download] Triggering download: ${filename}`);
     link.click();
 
     // Cleanup
@@ -169,33 +113,6 @@ export async function downloadFile(
     }, 100);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new Error(`Failed to download file: ${errorMessage}`);
+    throw new Error(`Download failed: ${errorMessage}`);
   }
-}
-
-/**
- * Get list of supported platforms
- */
-export function getSupportedPlatforms(): string[] {
-  return [
-    "YouTube",
-    "Instagram",
-    "TikTok",
-    "Twitter/X",
-    "Facebook",
-    "Spotify",
-    "SoundCloud",
-    "Twitch",
-    "Reddit",
-    "Pinterest",
-    "And many more...",
-  ];
-}
-
-/**
- * Validate if URL is supported
- */
-export function isUrlSupported(url: string): boolean {
-  const platform = detectPlatform(url);
-  return platform !== "unknown";
 }
