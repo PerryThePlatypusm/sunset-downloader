@@ -38,92 +38,7 @@ async function fetchWithTimeout(
 }
 
 /**
- * Try FastSaver API (primary - most reliable)
- * Supports 1000+ platforms
- */
-async function downloadWithFastSaver(
-  url: string,
-  audioOnly: boolean,
-  quality: string
-): Promise<DownloadResponse> {
-  try {
-    console.log("[FastSaver] Attempting download with URL:", url);
-
-    const fastSaverToken = process.env.FASTSAVER_API_TOKEN;
-    if (!fastSaverToken) {
-      console.log("[FastSaver] Token not configured, skipping");
-      return { error: "FastSaver not configured" };
-    }
-
-    console.log("[FastSaver] Token found, making API request...");
-
-    try {
-      const response = await fetchWithTimeout(
-        "https://api.fastsaver.in/v2/find",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "X-API-Token": fastSaverToken,
-          },
-          body: new URLSearchParams({
-            url: url.trim(),
-          }).toString(),
-        },
-        20000 // Increase timeout to 20s for API response
-      );
-
-      if (!response.ok) {
-        console.log(`[FastSaver] HTTP ${response.status}`);
-
-        if (response.status === 404) {
-          return { error: "Video not found or has been removed" };
-        } else if (response.status === 400) {
-          return { error: "Invalid URL or unsupported platform" };
-        } else if (response.status === 401 || response.status === 403) {
-          return { error: "API authentication failed - token may be invalid" };
-        } else if (response.status === 429) {
-          return { error: "Rate limited - service overloaded" };
-        }
-
-        return { error: `Service error: ${response.status}` };
-      }
-
-      const data = await response.json();
-      console.log("[FastSaver] Got response:", data);
-
-      if (data.error) {
-        console.log(`[FastSaver] API error: ${data.error}`);
-        return { error: data.error };
-      }
-
-      // FastSaver API response structure - check various possible fields
-      if (!data.url && !data.downloadUrl && !data.download_url) {
-        console.log("[FastSaver] No URL in response, full response:", JSON.stringify(data));
-        return { error: "Could not generate download link" };
-      }
-
-      const downloadUrl = data.url || data.downloadUrl || data.download_url;
-      console.log("[FastSaver] Success! Got download URL");
-      return {
-        url: downloadUrl,
-        filename: data.filename || `download_${Date.now()}`,
-      };
-    } catch (fetchError) {
-      const msg = fetchError instanceof Error ? fetchError.message : String(fetchError);
-      console.log(`[FastSaver] Fetch error: ${msg}`);
-      // Return error but don't throw - allows fallback to continue
-      return { error: `FastSaver request failed: ${msg}` };
-    }
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    console.log(`[FastSaver] Unexpected error: ${msg}`);
-    return { error: msg };
-  }
-}
-
-/**
- * Use cobalt.tools API (fallback)
+ * Use cobalt.tools API (primary)
  */
 async function downloadWithCobalt(
   url: string,
@@ -140,15 +55,17 @@ async function downloadWithCobalt(
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         },
         body: JSON.stringify({
           url: url.trim(),
           videoAudio: audioOnly ? "audio" : "video",
           audioFormat: audioOnly ? "mp3" : "mp4",
           vQuality: audioOnly ? "audio" : quality,
+          aFormat: "mp3",
         }),
       },
-      20000 // Increase timeout
+      20000
     );
 
     if (!response.ok) {
@@ -168,12 +85,12 @@ async function downloadWithCobalt(
 
     if (data.error) {
       console.log(`[Cobalt] API error: ${data.error}`);
-      return { error: `Cobalt: ${data.error}` };
+      return { error: `${data.error}` };
     }
 
     if (!data.url) {
       console.log("[Cobalt] No URL in response");
-      return { error: "Cobalt: No download URL generated" };
+      return { error: "No download URL generated" };
     }
 
     console.log("[Cobalt] Success!");
@@ -184,7 +101,7 @@ async function downloadWithCobalt(
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     console.log(`[Cobalt] Error: ${msg}`);
-    return { error: `Cobalt: ${msg}` };
+    return { error: msg };
   }
 }
 
@@ -267,22 +184,9 @@ export const handleDownload: RequestHandler = async (req, res) => {
     console.log("[Download] Format:", audioOnly ? "audio" : "video");
     console.log("[Download] Quality:", quality);
 
-    // Try FastSaver first (primary - most reliable)
-    console.log("[Download] Trying FastSaver API...");
-    let result = await downloadWithFastSaver(url, audioOnly, quality);
-
-    if (!result.error && result.url) {
-      console.log("[Download] Success with FastSaver!");
-      return res.json({
-        success: true,
-        url: result.url,
-        filename: result.filename,
-      });
-    }
-
-    // Try Cobalt as fallback
-    console.log("[Download] FastSaver failed, trying Cobalt API...");
-    result = await downloadWithCobalt(url, audioOnly, quality);
+    // Try Cobalt first (primary - most reliable for 1000+ platforms)
+    console.log("[Download] Trying Cobalt API...");
+    let result = await downloadWithCobalt(url, audioOnly, quality);
 
     if (!result.error && result.url) {
       console.log("[Download] Success with Cobalt!");
@@ -293,8 +197,8 @@ export const handleDownload: RequestHandler = async (req, res) => {
       });
     }
 
-    // Try Y2mate as final fallback
-    console.log("[Download] Trying Y2mate API...");
+    // Try Y2mate as fallback
+    console.log("[Download] Cobalt failed, trying Y2mate API...");
     result = await downloadWithY2mate(url, audioOnly, quality);
 
     if (!result.error && result.url) {
