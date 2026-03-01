@@ -2,7 +2,7 @@ import { Handler } from "@netlify/functions";
 
 /**
  * Netlify Function for downloading media
- * Uses reliable external APIs
+ * Uses reliable external APIs with FastSaver as primary
  */
 
 /**
@@ -28,6 +28,79 @@ async function fetchWithTimeout(
   } catch (error) {
     if (timeoutId) clearTimeout(timeoutId);
     throw error;
+  }
+}
+
+/**
+ * Try FastSaver API (Primary)
+ */
+async function tryDownloadWithFastSaver(
+  url: string,
+  audioOnly: boolean,
+  quality: string
+): Promise<{ url?: string; error?: string }> {
+  try {
+    console.log("[FastSaver] Attempting download...");
+
+    const fastSaverToken = process.env.FASTSAVER_API_TOKEN;
+    if (!fastSaverToken) {
+      return { error: "FastSaver API token not configured" };
+    }
+
+    const response = await fetchWithTimeout(
+      "https://api.fastsaver.in/v2/find",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "X-API-Token": fastSaverToken,
+        },
+        body: new URLSearchParams({
+          url: url.trim(),
+        }).toString(),
+      }
+    );
+
+    if (!response.ok) {
+      const statusMsg = `HTTP ${response.status}`;
+      console.log(`[FastSaver] Failed with ${statusMsg}`);
+
+      if (response.status === 400) {
+        return { error: "Invalid URL or unsupported platform" };
+      } else if (response.status === 401) {
+        return { error: "API authentication failed" };
+      } else if (response.status === 404) {
+        return { error: "Video not found or has been removed" };
+      } else if (response.status === 429) {
+        return { error: "Rate limited - service overloaded" };
+      } else if (response.status >= 500) {
+        return { error: "Service temporarily unavailable" };
+      }
+
+      return { error: `Service error: ${statusMsg}` };
+    }
+
+    const data = await response.json();
+
+    if (data.error) {
+      console.log(`[FastSaver] API returned error: ${data.error}`);
+      return { error: data.error };
+    }
+
+    // FastSaver returns different response structure
+    // It provides download link in the response
+    if (!data.url && !data.downloadUrl) {
+      console.log("[FastSaver] No download URL in response");
+      return { error: "Could not generate download link" };
+    }
+
+    const downloadUrl = data.url || data.downloadUrl;
+    console.log("[FastSaver] Success!");
+    return { url: downloadUrl };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : "Unknown error";
+    console.log(`[FastSaver] Failed: ${msg}`);
+    return { error: msg };
   }
 }
 
@@ -198,12 +271,12 @@ const handler: Handler = async (event) => {
     console.log("[Download] Type:", audioOnly ? "audio" : "video");
     console.log("[Download] Quality:", quality);
 
-    // Try Cobalt first
-    console.log("[Download] Trying Cobalt API...");
-    let result = await tryDownloadWithCobalt(url, audioOnly, quality);
+    // Try FastSaver first (primary API)
+    console.log("[Download] Trying FastSaver API...");
+    let result = await tryDownloadWithFastSaver(url, audioOnly, quality);
 
     if (result.url) {
-      console.log("[Download] Success!");
+      console.log("[Download] Success with FastSaver!");
       return {
         statusCode: 200,
         body: JSON.stringify({
@@ -214,12 +287,28 @@ const handler: Handler = async (event) => {
       };
     }
 
-    // Try Y2mate as fallback
+    // Try Cobalt as fallback
+    console.log("[Download] FastSaver failed, trying Cobalt API...");
+    result = await tryDownloadWithCobalt(url, audioOnly, quality);
+
+    if (result.url) {
+      console.log("[Download] Success with Cobalt!");
+      return {
+        statusCode: 200,
+        body: JSON.stringify({
+          success: true,
+          url: result.url,
+          filename: `download_${Date.now()}`,
+        }),
+      };
+    }
+
+    // Try Y2mate as final fallback
     console.log("[Download] Trying Y2mate API...");
     result = await tryDownloadWithY2mate(url, audioOnly, quality);
 
     if (result.url) {
-      console.log("[Download] Success!");
+      console.log("[Download] Success with Y2mate!");
       return {
         statusCode: 200,
         body: JSON.stringify({

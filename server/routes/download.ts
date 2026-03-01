@@ -1,8 +1,8 @@
 import { RequestHandler } from "express";
 
 /**
- * Download handler using cobalt.tools API
- * Reliable, well-documented video/audio download service
+ * Download handler using FastSaver API (primary) with fallbacks
+ * FastSaver is the most reliable service for multi-platform downloads
  */
 
 interface DownloadResponse {
@@ -38,7 +38,79 @@ async function fetchWithTimeout(
 }
 
 /**
- * Use cobalt.tools API (most reliable)
+ * Try FastSaver API (primary - most reliable)
+ */
+async function downloadWithFastSaver(
+  url: string,
+  audioOnly: boolean,
+  quality: string
+): Promise<DownloadResponse> {
+  try {
+    console.log("[FastSaver] Attempting download...");
+
+    const fastSaverToken = process.env.FASTSAVER_API_TOKEN;
+    if (!fastSaverToken) {
+      console.log("[FastSaver] Token not configured");
+      return { error: "FastSaver not configured" };
+    }
+
+    const response = await fetchWithTimeout(
+      "https://api.fastsaver.in/v2/find",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "X-API-Token": fastSaverToken,
+        },
+        body: new URLSearchParams({
+          url: url.trim(),
+        }).toString(),
+      },
+      15000
+    );
+
+    if (!response.ok) {
+      console.log(`[FastSaver] HTTP ${response.status}`);
+
+      if (response.status === 404) {
+        return { error: "Video not found or has been removed" };
+      } else if (response.status === 400) {
+        return { error: "Invalid URL or unsupported platform" };
+      } else if (response.status === 429) {
+        return { error: "Rate limited - service overloaded" };
+      }
+
+      return { error: `Service error: ${response.status}` };
+    }
+
+    const data = await response.json();
+
+    if (data.error) {
+      console.log(`[FastSaver] API error: ${data.error}`);
+      return { error: data.error };
+    }
+
+    // FastSaver API response structure
+    if (!data.url && !data.downloadUrl) {
+      console.log("[FastSaver] No URL in response");
+      return { error: "Could not generate download link" };
+    }
+
+    const downloadUrl = data.url || data.downloadUrl;
+    console.log("[FastSaver] Success!");
+    return {
+      url: downloadUrl,
+      filename: data.filename || `download_${Date.now()}`,
+    };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.log(`[FastSaver] Error: ${msg}`);
+    return { error: msg };
+  }
+}
+
+/**
+ * Use cobalt.tools API (fallback)
  */
 async function downloadWithCobalt(
   url: string,
@@ -174,9 +246,22 @@ export const handleDownload: RequestHandler = async (req, res) => {
     console.log("[Download] Format:", audioOnly ? "audio" : "video");
     console.log("[Download] Quality:", quality);
 
-    // Try Cobalt first (most reliable)
-    console.log("[Download] Trying Cobalt API...");
-    let result = await downloadWithCobalt(url, audioOnly, quality);
+    // Try FastSaver first (primary - most reliable)
+    console.log("[Download] Trying FastSaver API...");
+    let result = await downloadWithFastSaver(url, audioOnly, quality);
+
+    if (!result.error && result.url) {
+      console.log("[Download] Success with FastSaver!");
+      return res.json({
+        success: true,
+        url: result.url,
+        filename: result.filename,
+      });
+    }
+
+    // Try Cobalt as fallback
+    console.log("[Download] FastSaver failed, trying Cobalt API...");
+    result = await downloadWithCobalt(url, audioOnly, quality);
 
     if (!result.error && result.url) {
       console.log("[Download] Success with Cobalt!");
@@ -187,9 +272,8 @@ export const handleDownload: RequestHandler = async (req, res) => {
       });
     }
 
-    console.log("[Download] Cobalt failed, trying Y2mate...");
-
-    // Try Y2mate as fallback
+    // Try Y2mate as final fallback
+    console.log("[Download] Trying Y2mate API...");
     result = await downloadWithY2mate(url, audioOnly, quality);
 
     if (!result.error && result.url) {
@@ -201,7 +285,7 @@ export const handleDownload: RequestHandler = async (req, res) => {
       });
     }
 
-    // Both failed - provide helpful error
+    // All services failed - provide helpful error
     console.error("[Download] All services failed");
     const errorMsg = result.error || "Unable to download from this URL";
 
