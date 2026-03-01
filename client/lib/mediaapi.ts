@@ -120,14 +120,23 @@ export async function downloadMediaAPI(
       // Already a good message from backend, keep it
     } else if (helpfulMessage.includes("Failed to fetch") || helpfulMessage.includes("timeout")) {
       helpfulMessage = "Connection timeout. Check your internet connection and try again.";
+    } else if (
+      helpfulMessage.includes("not found") ||
+      helpfulMessage.includes("not found or has been removed")
+    ) {
+      helpfulMessage =
+        "Video not found or has been removed. Please check:\n• URL is correct\n• Video is public\n• Content hasn't been deleted";
     } else if (helpfulMessage.includes("not available")) {
       helpfulMessage = "Video is not available or has been removed.";
-    } else if (helpfulMessage.includes("not found")) {
-      helpfulMessage = "Video not found. Please check the URL.";
     } else if (helpfulMessage.includes("age-restricted")) {
       helpfulMessage = "This video is age-restricted and cannot be downloaded.";
     } else if (helpfulMessage.includes("private")) {
       helpfulMessage = "This video is private and cannot be downloaded.";
+    } else if (helpfulMessage.includes("Invalid URL") || helpfulMessage.includes("unsupported")) {
+      helpfulMessage =
+        "Invalid URL or unsupported platform. Check the link format and ensure it's from a supported platform.";
+    } else if (helpfulMessage.includes("Rate limited") || helpfulMessage.includes("overloaded")) {
+      helpfulMessage = "Download services are temporarily busy. Please try again in a moment.";
     }
 
     return {

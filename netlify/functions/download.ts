@@ -58,13 +58,33 @@ async function tryDownloadWithCobalt(
     );
 
     if (!response.ok) {
-      return { error: `Service returned ${response.status}` };
+      const statusMsg = `HTTP ${response.status}`;
+      console.log(`[Cobalt] Failed with ${statusMsg}`);
+
+      // More specific error messages based on status code
+      if (response.status === 400) {
+        return { error: "Invalid URL or unsupported platform" };
+      } else if (response.status === 404) {
+        return { error: "Video not found or has been removed" };
+      } else if (response.status === 429) {
+        return { error: "Rate limited - service overloaded" };
+      } else if (response.status >= 500) {
+        return { error: "Service temporarily unavailable" };
+      }
+
+      return { error: `Service error: ${statusMsg}` };
     }
 
     const data = await response.json();
 
-    if (data.error || !data.url) {
-      return { error: data.error || "No download URL" };
+    if (data.error) {
+      console.log(`[Cobalt] API returned error: ${data.error}`);
+      return { error: data.error };
+    }
+
+    if (!data.url) {
+      console.log("[Cobalt] No download URL in response");
+      return { error: "Could not generate download link" };
     }
 
     console.log("[Cobalt] Success!");
@@ -106,13 +126,33 @@ async function tryDownloadWithY2mate(
     );
 
     if (!response.ok) {
-      return { error: `Service returned ${response.status}` };
+      const statusMsg = `HTTP ${response.status}`;
+      console.log(`[Y2mate] Failed with ${statusMsg}`);
+
+      // More specific error messages based on status code
+      if (response.status === 400) {
+        return { error: "Invalid URL or unsupported platform" };
+      } else if (response.status === 404) {
+        return { error: "Video not found or has been removed" };
+      } else if (response.status === 429) {
+        return { error: "Rate limited - service overloaded" };
+      } else if (response.status >= 500) {
+        return { error: "Service temporarily unavailable" };
+      }
+
+      return { error: `Service error: ${statusMsg}` };
     }
 
     const data = await response.json();
 
-    if (data.error || !data.url) {
-      return { error: data.error || "No download URL" };
+    if (data.error) {
+      console.log(`[Y2mate] API returned error: ${data.error}`);
+      return { error: data.error };
+    }
+
+    if (!data.url) {
+      console.log("[Y2mate] No download URL in response");
+      return { error: "Could not generate download link" };
     }
 
     console.log("[Y2mate] Success!");
@@ -190,12 +230,26 @@ const handler: Handler = async (event) => {
       };
     }
 
-    // Both failed
+    // Both failed - provide helpful message
     console.error("[Download] All services failed:", result.error);
+
+    // Generate helpful error message based on the error
+    let userMessage = `Download Failed: ${result.error}`;
+
+    if (result.error?.includes("404") || result.error?.includes("not found")) {
+      userMessage = "Video not found. Please check:\n1. URL is correct and current\n2. Video is public (not private)\n3. Content hasn't been removed";
+    } else if (result.error?.includes("400") || result.error?.includes("Invalid URL")) {
+      userMessage = "Invalid URL or unsupported platform. Check the link format.";
+    } else if (result.error?.includes("429") || result.error?.includes("Rate limited")) {
+      userMessage = "Services are overloaded. Please try again in a moment.";
+    } else if (result.error?.includes("timeout") || result.error?.includes("timeout")) {
+      userMessage = "Connection timeout. Check your internet and try again.";
+    }
+
     return {
       statusCode: 503,
       body: JSON.stringify({
-        error: `Download failed: ${result.error}. Please check the URL is correct and try again.`,
+        error: userMessage,
       }),
     };
   } catch (error) {
