@@ -33,6 +33,7 @@ async function fetchWithTimeout(
 
 /**
  * Try FastSaver API (Primary)
+ * Supports 1000+ platforms
  */
 async function tryDownloadWithFastSaver(
   url: string,
@@ -40,66 +41,76 @@ async function tryDownloadWithFastSaver(
   quality: string
 ): Promise<{ url?: string; error?: string }> {
   try {
-    console.log("[FastSaver] Attempting download...");
+    console.log("[FastSaver] Attempting download with URL:", url);
 
     const fastSaverToken = process.env.FASTSAVER_API_TOKEN;
     if (!fastSaverToken) {
-      return { error: "FastSaver API token not configured" };
+      console.log("[FastSaver] Token not configured, skipping");
+      return { error: "FastSaver not configured" };
     }
 
-    const response = await fetchWithTimeout(
-      "https://api.fastsaver.in/v2/find",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          "X-API-Token": fastSaverToken,
+    console.log("[FastSaver] Token found, making API request...");
+
+    try {
+      const response = await fetchWithTimeout(
+        "https://api.fastsaver.in/v2/find",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-API-Token": fastSaverToken,
+          },
+          body: new URLSearchParams({
+            url: url.trim(),
+          }).toString(),
         },
-        body: new URLSearchParams({
-          url: url.trim(),
-        }).toString(),
+        20000 // Increase timeout to 20s
+      );
+
+      if (!response.ok) {
+        const statusMsg = `HTTP ${response.status}`;
+        console.log(`[FastSaver] Failed with ${statusMsg}`);
+
+        if (response.status === 400) {
+          return { error: "Invalid URL or unsupported platform" };
+        } else if (response.status === 401 || response.status === 403) {
+          return { error: "API authentication failed - token may be invalid" };
+        } else if (response.status === 404) {
+          return { error: "Video not found or has been removed" };
+        } else if (response.status === 429) {
+          return { error: "Rate limited - service overloaded" };
+        } else if (response.status >= 500) {
+          return { error: "Service temporarily unavailable" };
+        }
+
+        return { error: `Service error: ${statusMsg}` };
       }
-    );
 
-    if (!response.ok) {
-      const statusMsg = `HTTP ${response.status}`;
-      console.log(`[FastSaver] Failed with ${statusMsg}`);
+      const data = await response.json();
+      console.log("[FastSaver] Got response");
 
-      if (response.status === 400) {
-        return { error: "Invalid URL or unsupported platform" };
-      } else if (response.status === 401) {
-        return { error: "API authentication failed" };
-      } else if (response.status === 404) {
-        return { error: "Video not found or has been removed" };
-      } else if (response.status === 429) {
-        return { error: "Rate limited - service overloaded" };
-      } else if (response.status >= 500) {
-        return { error: "Service temporarily unavailable" };
+      if (data.error) {
+        console.log(`[FastSaver] API returned error: ${data.error}`);
+        return { error: data.error };
       }
 
-      return { error: `Service error: ${statusMsg}` };
+      // FastSaver API response structure - check various possible fields
+      if (!data.url && !data.downloadUrl && !data.download_url) {
+        console.log("[FastSaver] No download URL in response");
+        return { error: "Could not generate download link" };
+      }
+
+      const downloadUrl = data.url || data.downloadUrl || data.download_url;
+      console.log("[FastSaver] Success!");
+      return { url: downloadUrl };
+    } catch (fetchError) {
+      const msg = fetchError instanceof Error ? fetchError.message : String(fetchError);
+      console.log(`[FastSaver] Fetch error: ${msg}`);
+      return { error: `FastSaver request failed: ${msg}` };
     }
-
-    const data = await response.json();
-
-    if (data.error) {
-      console.log(`[FastSaver] API returned error: ${data.error}`);
-      return { error: data.error };
-    }
-
-    // FastSaver returns different response structure
-    // It provides download link in the response
-    if (!data.url && !data.downloadUrl) {
-      console.log("[FastSaver] No download URL in response");
-      return { error: "Could not generate download link" };
-    }
-
-    const downloadUrl = data.url || data.downloadUrl;
-    console.log("[FastSaver] Success!");
-    return { url: downloadUrl };
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Unknown error";
-    console.log(`[FastSaver] Failed: ${msg}`);
+    console.log(`[FastSaver] Unexpected error: ${msg}`);
     return { error: msg };
   }
 }
@@ -319,26 +330,26 @@ const handler: Handler = async (event) => {
       };
     }
 
-    // Both failed - provide helpful message
-    console.error("[Download] All services failed:", result.error);
+    // All services failed - provide helpful message
+    console.error("[Download] All services failed. Last error:", result.error);
 
-    // Generate helpful error message based on the error
-    let userMessage = `Download Failed: ${result.error}`;
+    const errorMsg = result.error || "Unable to download from this URL";
+    let helpMessage = `Download Failed: ${errorMsg}`;
 
-    if (result.error?.includes("404") || result.error?.includes("not found")) {
-      userMessage = "Video not found. Please check:\n1. URL is correct and current\n2. Video is public (not private)\n3. Content hasn't been removed";
-    } else if (result.error?.includes("400") || result.error?.includes("Invalid URL")) {
-      userMessage = "Invalid URL or unsupported platform. Check the link format.";
-    } else if (result.error?.includes("429") || result.error?.includes("Rate limited")) {
-      userMessage = "Services are overloaded. Please try again in a moment.";
-    } else if (result.error?.includes("timeout") || result.error?.includes("timeout")) {
-      userMessage = "Connection timeout. Check your internet and try again.";
+    if (errorMsg.includes("404")) {
+      helpMessage = `Video Not Found\n\nThis usually means:\n1. Video URL is incorrect or broken\n2. Video has been removed or deleted\n3. Video is private\n\nPlease verify the URL and try again`;
+    } else if (errorMsg.includes("400") || errorMsg.includes("Invalid")) {
+      helpMessage = `Invalid URL or Unsupported Platform\n\nTry:\n1. Copy the full URL from your browser\n2. Make sure it's from a supported platform\n3. Ensure no extra spaces or characters`;
+    } else if (errorMsg.includes("timeout") || errorMsg.includes("fetch failed")) {
+      helpMessage = `Connection Issue\n\nTry:\n1. Check your internet connection\n2. Wait a moment and try again\n3. Use a shorter video\n4. Try a different video`;
+    } else if (errorMsg.includes("Rate limited") || errorMsg.includes("overloaded")) {
+      helpMessage = `Services Overloaded\n\nOur download services are temporarily busy.\n\nTry:\n1. Wait 30 seconds\n2. Try again\n3. Use a different video`;
     }
 
     return {
       statusCode: 503,
       body: JSON.stringify({
-        error: userMessage,
+        error: helpMessage,
       }),
     };
   } catch (error) {
