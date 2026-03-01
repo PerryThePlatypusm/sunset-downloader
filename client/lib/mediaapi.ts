@@ -12,17 +12,8 @@ export interface DownloadResult {
 }
 
 /**
- * Get the API key from environment variables
+ * No API key needed! Uses public download services
  */
-function getApiKey(): string {
-  const key = import.meta.env.VITE_MEDIAAPI_KEY;
-  if (!key) {
-    throw new Error(
-      "MediaAPI key not configured. Please set VITE_MEDIAAPI_KEY environment variable."
-    );
-  }
-  return key;
-}
 
 /**
  * Detect platform from URL
@@ -56,59 +47,46 @@ function detectPlatform(url: string): string {
 }
 
 /**
- * Download media using MediaAPI
+ * Download media using free public services (no API key needed!)
  */
 export async function downloadMediaAPI(
   url: string,
   audioOnly: boolean = false
 ): Promise<DownloadResult> {
   try {
-    const apiKey = getApiKey();
     const platform = detectPlatform(url);
 
-    console.log(`[MediaAPI] Downloading from ${platform}: ${url}`);
+    console.log(`[Download] Processing ${platform}: ${url}`);
 
-    // Call MediaAPI endpoint
-    const mediaApiUrl = new URL("https://mediaapi.p.rapidapi.com/api/downloader");
-    mediaApiUrl.searchParams.append("url", url);
-    if (audioOnly) {
-      mediaApiUrl.searchParams.append("format", "audio");
-    }
+    // Use y2mate API - works for YouTube and many platforms
+    // No authentication needed!
+    const y2mateUrl = new URL("https://www.y2mate.com/mates/api/fetch");
 
-    const response = await fetch(mediaApiUrl.toString(), {
-      method: "GET",
+    // Build download parameters
+    const params = new URLSearchParams();
+    params.append("url", url);
+    params.append("type", audioOnly ? "audio" : "video");
+    params.append("quality", audioOnly ? "128" : "720");
+
+    console.log(`[Download] Calling y2mate API...`);
+
+    const response = await fetch(y2mateUrl.toString(), {
+      method: "POST",
       headers: {
-        "x-rapidapi-key": apiKey,
-        "x-rapidapi-host": "mediaapi.p.rapidapi.com",
+        "Content-Type": "application/x-www-form-urlencoded",
       },
+      body: params.toString(),
     });
 
-    console.log(`[MediaAPI] Response status: ${response.status}`);
+    console.log(`[Download] Response status: ${response.status}`);
 
     if (!response.ok) {
-      const errorData = await response.text();
-      console.error(`[MediaAPI] API Error:`, errorData);
-      
-      if (response.status === 403) {
-        throw new Error(
-          "API key invalid or quota exceeded. Please check your RapidAPI key."
-        );
-      } else if (response.status === 429) {
-        throw new Error(
-          "Too many requests. Please wait a moment and try again."
-        );
-      } else if (response.status === 400) {
-        throw new Error(
-          "Invalid URL. Please make sure the link is valid and supported."
-        );
-      }
-      
-      throw new Error(`API returned status ${response.status}`);
+      throw new Error(`Service returned status ${response.status}`);
     }
 
     const data = await response.json();
 
-    console.log("[MediaAPI] Response data:", data);
+    console.log("[Download] Response data:", data);
 
     // Check for error in response
     if (data.error || !data.url) {
@@ -117,20 +95,15 @@ export async function downloadMediaAPI(
     }
 
     // Determine MIME type based on format
-    let mimeType = "video/mp4";
-    if (audioOnly || data.format === "mp3" || data.type === "audio") {
-      mimeType = "audio/mpeg";
-    } else if (data.format === "mp4" || data.type === "video") {
-      mimeType = "video/mp4";
-    }
+    let mimeType = audioOnly ? "audio/mpeg" : "video/mp4";
 
     // Generate filename
-    let filename = data.filename || `download_${Date.now()}`;
+    let filename = data.filename || data.title || `download_${Date.now()}`;
     if (!filename.includes(".")) {
       filename += audioOnly ? ".mp3" : ".mp4";
     }
 
-    console.log(`[MediaAPI] Download ready: ${filename}`);
+    console.log(`[Download] Ready: ${filename}`);
 
     return {
       success: true,
@@ -140,11 +113,19 @@ export async function downloadMediaAPI(
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error("[MediaAPI] Error:", errorMessage);
+    console.error("[Download] Error:", errorMessage);
+
+    // Provide helpful suggestions
+    let helpfulMessage = errorMessage;
+    if (errorMessage.includes("url") || errorMessage.includes("not found")) {
+      helpfulMessage = "URL not found or not supported. Please try a different link.";
+    } else if (errorMessage.includes("404")) {
+      helpfulMessage = "Video not found or has been deleted.";
+    }
 
     return {
       success: false,
-      error: errorMessage,
+      error: helpfulMessage,
     };
   }
 }
