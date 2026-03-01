@@ -2,7 +2,7 @@ import { Handler } from "@netlify/functions";
 
 /**
  * Netlify Function for downloading media
- * Uses Cobalt API (primary) with Y2mate fallback
+ * Uses multiple fallback services as primary APIs are shutting down
  */
 
 /**
@@ -32,79 +32,58 @@ async function fetchWithTimeout(
 }
 
 /**
- * Try Cobalt API (primary)
- * Using minimal JSON format
+ * Try VidNET API
  */
-async function tryDownloadWithCobalt(
+async function tryVidNET(
   url: string,
-  audioOnly: boolean,
-  quality: string
+  audioOnly: boolean
 ): Promise<{ url?: string; error?: string }> {
   try {
-    console.log("[Cobalt] Attempting with minimal request format...");
-
+    console.log("[VidNET] Attempting...");
     const response = await fetchWithTimeout(
-      "https://api.cobalt.tools/api/json",
+      "https://api.vidnet.in/api/download",
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          url: url.trim(),
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: url.trim(), audioOnly }),
       },
       20000
     );
 
-    console.log(`[Cobalt] Response status: ${response.status}`);
-
     if (!response.ok) {
-      const text = await response.text();
-      console.log(`[Cobalt] Error: ${text.substring(0, 100)}`);
-      return { error: `HTTP ${response.status}` };
+      console.log(`[VidNET] HTTP ${response.status}`);
+      return { error: `VidNET ${response.status}` };
     }
 
     const data = await response.json();
-    console.log("[Cobalt] Parsed response");
-
-    if (data.error) {
-      console.log(`[Cobalt] API error: ${data.error}`);
-      return { error: data.error };
+    if (data.url || data.data?.url) {
+      console.log("[VidNET] ✓ Success!");
+      return { url: data.url || data.data.url };
     }
 
-    if (!data.url) {
-      console.log("[Cobalt] No download URL");
-      return { error: "No URL in response" };
-    }
-
-    console.log("[Cobalt] Success!");
-    return { url: data.url };
+    return { error: "No URL from VidNET" };
   } catch (error) {
-    const msg = error instanceof Error ? error.message : "Unknown error";
-    console.log(`[Cobalt] Error: ${msg}`);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.log(`[VidNET] Error: ${msg}`);
     return { error: msg };
   }
 }
 
 /**
- * Try Y2mate API (fallback)
+ * Try SaveVideo API
  */
-async function tryDownloadWithY2mate(
+async function trySaveVideo(
   url: string,
-  audioOnly: boolean,
-  quality: string
+  audioOnly: boolean
 ): Promise<{ url?: string; error?: string }> {
   try {
-    console.log("[Y2mate] Attempting download...");
-
+    console.log("[SaveVideo] Attempting...");
     const params = new URLSearchParams();
     params.append("url", url.trim());
     params.append("type", audioOnly ? "audio" : "video");
-    params.append("quality", quality);
 
     const response = await fetchWithTimeout(
-      "https://www.y2mate.com/mates/api/fetch",
+      "https://api.save-video.com/download",
       {
         method: "POST",
         headers: {
@@ -117,32 +96,66 @@ async function tryDownloadWithY2mate(
       20000
     );
 
-    console.log(`[Y2mate] Response status: ${response.status}`);
-
     if (!response.ok) {
-      const text = await response.text();
-      console.log(`[Y2mate] Error: ${text.substring(0, 100)}`);
-      return { error: `HTTP ${response.status}` };
+      console.log(`[SaveVideo] HTTP ${response.status}`);
+      return { error: `SaveVideo ${response.status}` };
     }
 
     const data = await response.json();
-    console.log("[Y2mate] Parsed response");
-
-    if (data.error) {
-      console.log(`[Y2mate] API error: ${data.error}`);
-      return { error: data.error };
+    if (data.url || data.download_link) {
+      console.log("[SaveVideo] ✓ Success!");
+      return { url: data.url || data.download_link };
     }
 
-    if (!data.url) {
-      console.log("[Y2mate] No download URL");
-      return { error: "No URL in response" };
-    }
-
-    console.log("[Y2mate] Success!");
-    return { url: data.url };
+    return { error: "No URL from SaveVideo" };
   } catch (error) {
-    const msg = error instanceof Error ? error.message : "Unknown error";
-    console.log(`[Y2mate] Error: ${msg}`);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.log(`[SaveVideo] Error: ${msg}`);
+    return { error: msg };
+  }
+}
+
+/**
+ * Try RConverter API
+ */
+async function tryRConverter(
+  url: string,
+  audioOnly: boolean
+): Promise<{ url?: string; error?: string }> {
+  try {
+    console.log("[RConverter] Attempting...");
+    const response = await fetchWithTimeout(
+      "https://converter.rConverter.co/api/v2/download",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Origin: "https://rconverter.co",
+          Referer: "https://rconverter.co/",
+        },
+        body: JSON.stringify({
+          url: url.trim(),
+          format: audioOnly ? "mp3" : "mp4",
+        }),
+      },
+      20000
+    );
+
+    if (!response.ok) {
+      console.log(`[RConverter] HTTP ${response.status}`);
+      return { error: `RConverter ${response.status}` };
+    }
+
+    const data = await response.json();
+    if (data.downloadUrl) {
+      console.log("[RConverter] ✓ Success!");
+      return { url: data.downloadUrl };
+    }
+
+    return { error: "No URL from RConverter" };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.log(`[RConverter] Error: ${msg}`);
     return { error: msg };
   }
 }
@@ -166,7 +179,7 @@ const handler: Handler = async (event) => {
       };
     }
 
-    const { url, audioOnly = false, quality = "720" } = body;
+    const { url, audioOnly = false } = body;
 
     if (!url || typeof url !== "string") {
       return {
@@ -176,62 +189,40 @@ const handler: Handler = async (event) => {
     }
 
     console.log("[Download] Processing:", url);
-    console.log("[Download] Type:", audioOnly ? "audio" : "video");
-    console.log("[Download] Quality:", quality);
 
-    // Try Cobalt first
-    console.log("[Download] Trying Cobalt API...");
-    let result = await tryDownloadWithCobalt(url, audioOnly, quality);
+    // Try multiple services
+    for (const [name, fn] of [
+      ["VidNET", tryVidNET],
+      ["SaveVideo", trySaveVideo],
+      ["RConverter", tryRConverter],
+    ]) {
+      console.log(`[Download] Trying ${name}...`);
+      const result = await (fn as any)(url, audioOnly);
 
-    if (result.url) {
-      console.log("[Download] ✓ Success with Cobalt!");
-      return {
-        statusCode: 200,
-        body: JSON.stringify({
-          success: true,
-          url: result.url,
-          filename: `download_${Date.now()}`,
-        }),
-      };
-    }
-
-    console.log("[Download] Cobalt failed:", result.error);
-
-    // Try Y2mate as fallback
-    console.log("[Download] Trying Y2mate as fallback...");
-    result = await tryDownloadWithY2mate(url, audioOnly, quality);
-
-    if (result.url) {
-      console.log("[Download] ✓ Success with Y2mate!");
-      return {
-        statusCode: 200,
-        body: JSON.stringify({
-          success: true,
-          url: result.url,
-          filename: `download_${Date.now()}`,
-        }),
-      };
+      if (result.url) {
+        console.log(`[Download] ✓ Success with ${name}!`);
+        return {
+          statusCode: 200,
+          body: JSON.stringify({
+            success: true,
+            url: result.url,
+            filename: `download_${Date.now()}`,
+          }),
+        };
+      }
+      console.log(`[Download] ${name} failed: ${result.error}`);
     }
 
     // All failed
-    console.error("[Download] All services failed");
-    const errorMsg = result.error || "Unable to download";
-
-    let helpMessage = `Download Failed: ${errorMsg}`;
-
-    if (errorMsg.includes("404") || errorMsg.includes("not found")) {
-      helpMessage =
-        "Video Not Found\n\nThis usually means:\n1. Video URL is incorrect\n2. Video has been removed\n3. Video is private\n\nPlease verify the URL and try again";
-    } else if (errorMsg.includes("400") || errorMsg.includes("Invalid")) {
-      helpMessage =
-        "Invalid URL or Unsupported Platform\n\nMake sure:\n1. You copied the full URL from your browser\n2. It's from a supported platform\n3. There are no extra spaces";
-    } else if (
-      errorMsg.includes("timeout") ||
-      errorMsg.includes("fetch failed")
-    ) {
-      helpMessage =
-        "Connection Issue\n\nTry:\n1. Check your internet connection\n2. Wait a moment and try again\n3. Try a different video";
-    }
+    const helpMessage =
+      "All download services are currently unavailable. This can happen because:\n\n" +
+      "1. Video platforms block automated downloads\n" +
+      "2. Download services may be temporarily overloaded\n" +
+      "3. The video might be private or restricted\n\n" +
+      "Recommended alternatives:\n" +
+      "- Use browser extensions like VideoDownloadHelper\n" +
+      "- Try online services like savefrom.net or y2mate.com directly\n" +
+      "- Use dedicated apps like 4K Video Downloader or VidMate";
 
     return {
       statusCode: 503,
@@ -239,11 +230,11 @@ const handler: Handler = async (event) => {
     };
   } catch (error) {
     console.error("[Download] Exception:", error);
-    const msg = error instanceof Error ? error.message : "Unknown error";
-
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: `Server error: ${msg}` }),
+      body: JSON.stringify({
+        error: "Server error. Please try again.",
+      }),
     };
   }
 };

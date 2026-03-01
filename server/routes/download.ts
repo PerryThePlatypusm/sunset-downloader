@@ -1,8 +1,8 @@
 import { RequestHandler } from "express";
 
 /**
- * Download handler using Cobalt API (primary) with Y2mate fallback
- * Supports 1000+ platforms
+ * Download handler using multiple fallback services
+ * Note: Many video platforms actively block automated downloads
  */
 
 interface DownloadResponse {
@@ -38,20 +38,18 @@ async function fetchWithTimeout(
 }
 
 /**
- * Try Cobalt API (primary)
- * Using minimal JSON format for compatibility
+ * Try VidNET API endpoint
  */
-async function downloadWithCobalt(
+async function downloadWithVidNET(
   url: string,
   audioOnly: boolean,
   quality: string
 ): Promise<DownloadResponse> {
   try {
-    console.log("[Cobalt] Attempting with minimal request format...");
+    console.log("[VidNET] Attempting download...");
 
-    // Use absolute minimal request - just the URL
     const response = await fetchWithTimeout(
-      "https://api.cobalt.tools/api/json",
+      "https://api.vidnet.in/api/download",
       {
         method: "POST",
         headers: {
@@ -59,62 +57,62 @@ async function downloadWithCobalt(
         },
         body: JSON.stringify({
           url: url.trim(),
+          audioOnly,
         }),
       },
       20000
     );
 
-    console.log(`[Cobalt] Response status: ${response.status}`);
+    console.log(`[VidNET] Status: ${response.status}`);
 
     if (!response.ok) {
       const text = await response.text();
-      console.log(`[Cobalt] Error response: ${text.substring(0, 100)}`);
-      return { error: `HTTP ${response.status}` };
+      console.log(`[VidNET] Error: ${text.substring(0, 150)}`);
+      return { error: `VidNET returned ${response.status}` };
     }
 
     const data = await response.json();
-    console.log("[Cobalt] Parsed response");
 
     if (data.error) {
-      console.log(`[Cobalt] API error: ${data.error}`);
+      console.log(`[VidNET] Error: ${data.error}`);
       return { error: data.error };
     }
 
-    if (!data.url) {
-      console.log("[Cobalt] No download URL in response");
-      return { error: "No URL in response" };
+    if (data.url || data.data?.url) {
+      const downloadUrl = data.url || data.data.url;
+      console.log("[VidNET] ✓ Success!");
+      return {
+        url: downloadUrl,
+        filename: `download_${Date.now()}`,
+      };
     }
 
-    console.log("[Cobalt] Success!");
-    return {
-      url: data.url,
-      filename: data.filename || `download_${Date.now()}`,
-    };
+    console.log("[VidNET] No URL in response");
+    return { error: "No download link generated" };
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    console.log(`[Cobalt] Error: ${msg}`);
+    console.log(`[VidNET] Error: ${msg}`);
     return { error: msg };
   }
 }
 
 /**
- * Try Y2mate API (fallback)
+ * Try API.save-video.com endpoint
  */
-async function downloadWithY2mate(
+async function downloadWithSaveVideo(
   url: string,
   audioOnly: boolean,
   quality: string
 ): Promise<DownloadResponse> {
   try {
-    console.log("[Y2mate] Attempting download...");
+    console.log("[SaveVideo] Attempting download...");
 
     const params = new URLSearchParams();
     params.append("url", url.trim());
     params.append("type", audioOnly ? "audio" : "video");
-    params.append("quality", quality);
 
     const response = await fetchWithTimeout(
-      "https://www.y2mate.com/mates/api/fetch",
+      "https://api.save-video.com/download",
       {
         method: "POST",
         headers: {
@@ -127,35 +125,94 @@ async function downloadWithY2mate(
       20000
     );
 
-    console.log(`[Y2mate] Response status: ${response.status}`);
+    console.log(`[SaveVideo] Status: ${response.status}`);
 
     if (!response.ok) {
-      const text = await response.text();
-      console.log(`[Y2mate] Error response: ${text.substring(0, 100)}`);
-      return { error: `HTTP ${response.status}` };
+      console.log(`[SaveVideo] HTTP ${response.status}`);
+      return { error: `SaveVideo returned ${response.status}` };
     }
 
     const data = await response.json();
-    console.log("[Y2mate] Parsed response");
 
     if (data.error) {
-      console.log(`[Y2mate] API error: ${data.error}`);
+      console.log(`[SaveVideo] Error: ${data.error}`);
       return { error: data.error };
     }
 
-    if (!data.url) {
-      console.log("[Y2mate] No download URL in response");
-      return { error: "No URL in response" };
+    if (data.url || data.download_link) {
+      const downloadUrl = data.url || data.download_link;
+      console.log("[SaveVideo] ✓ Success!");
+      return {
+        url: downloadUrl,
+        filename: `download_${Date.now()}`,
+      };
     }
 
-    console.log("[Y2mate] Success!");
-    return {
-      url: data.url,
-      filename: data.filename || `download_${Date.now()}`,
-    };
+    console.log("[SaveVideo] No URL in response");
+    return { error: "No download link generated" };
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    console.log(`[Y2mate] Error: ${msg}`);
+    console.log(`[SaveVideo] Error: ${msg}`);
+    return { error: msg };
+  }
+}
+
+/**
+ * Try RConverter.co endpoint (known to work with many platforms)
+ */
+async function downloadWithRConverter(
+  url: string,
+  audioOnly: boolean,
+  quality: string
+): Promise<DownloadResponse> {
+  try {
+    console.log("[RConverter] Attempting download...");
+
+    const response = await fetchWithTimeout(
+      "https://converter.rConverter.co/api/v2/download",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Origin: "https://rconverter.co",
+          Referer: "https://rconverter.co/",
+        },
+        body: JSON.stringify({
+          url: url.trim(),
+          format: audioOnly ? "mp3" : "mp4",
+        }),
+      },
+      20000
+    );
+
+    console.log(`[RConverter] Status: ${response.status}`);
+
+    if (!response.ok) {
+      console.log(`[RConverter] HTTP ${response.status}`);
+      return { error: `RConverter returned ${response.status}` };
+    }
+
+    const data = await response.json();
+
+    if (data.error || data.errors) {
+      const error = data.error || data.errors;
+      console.log(`[RConverter] Error: ${error}`);
+      return { error: String(error) };
+    }
+
+    if (data.downloadUrl) {
+      console.log("[RConverter] ✓ Success!");
+      return {
+        url: data.downloadUrl,
+        filename: `download_${Date.now()}`,
+      };
+    }
+
+    console.log("[RConverter] No URL in response");
+    return { error: "No download link generated" };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.log(`[RConverter] Error: ${msg}`);
     return { error: msg };
   }
 }
@@ -178,61 +235,46 @@ export const handleDownload: RequestHandler = async (req, res) => {
 
     console.log("[Download] Processing:", url);
     console.log("[Download] Format:", audioOnly ? "audio" : "video");
-    console.log("[Download] Quality:", quality);
 
-    // Try Cobalt first
-    console.log("[Download] Trying Cobalt API...");
-    let result = await downloadWithCobalt(url, audioOnly, quality);
+    // Try multiple services in order
+    const services = [
+      { name: "VidNET", fn: downloadWithVidNET },
+      { name: "SaveVideo", fn: downloadWithSaveVideo },
+      { name: "RConverter", fn: downloadWithRConverter },
+    ];
 
-    if (!result.error && result.url) {
-      console.log("[Download] ✓ Success with Cobalt!");
-      return res.json({
-        success: true,
-        url: result.url,
-        filename: result.filename,
-      });
+    for (const service of services) {
+      console.log(`[Download] Trying ${service.name}...`);
+      const result = await service.fn(url, audioOnly, quality);
+
+      if (result.url && !result.error) {
+        console.log(`[Download] ✓ Success with ${service.name}!`);
+        return res.json({
+          success: true,
+          url: result.url,
+          filename: result.filename,
+        });
+      }
+
+      console.log(`[Download] ${service.name} failed: ${result.error}`);
     }
-
-    console.log("[Download] Cobalt failed:", result.error);
-
-    // Try Y2mate as fallback
-    console.log("[Download] Trying Y2mate API as fallback...");
-    result = await downloadWithY2mate(url, audioOnly, quality);
-
-    if (!result.error && result.url) {
-      console.log("[Download] ✓ Success with Y2mate!");
-      return res.json({
-        success: true,
-        url: result.url,
-        filename: result.filename,
-      });
-    }
-
-    console.log("[Download] Y2mate also failed:", result.error);
 
     // All services failed
-    console.error("[Download] All services failed");
-    const errorMsg = result.error || "Unable to download";
+    console.error("[Download] All download services failed");
 
-    // Determine helpful error message
-    let helpMessage = `Download Failed: ${errorMsg}`;
-
-    if (errorMsg.includes("404") || errorMsg.includes("not found")) {
-      helpMessage =
-        "Video Not Found\n\nThis usually means:\n1. Video URL is incorrect\n2. Video has been removed\n3. Video is private\n\nPlease verify the URL and try again";
-    } else if (errorMsg.includes("400") || errorMsg.includes("Invalid")) {
-      helpMessage =
-        "Invalid URL or Unsupported Platform\n\nMake sure:\n1. You copied the full URL from your browser\n2. It's from a supported platform\n3. There are no extra spaces";
-    } else if (
-      errorMsg.includes("timeout") ||
-      errorMsg.includes("fetch failed")
-    ) {
-      helpMessage =
-        "Connection Issue\n\nTry:\n1. Check your internet connection\n2. Wait a moment and try again\n3. Try a different video";
-    } else if (errorMsg.includes("Rate limited")) {
-      helpMessage =
-        "Services Overloaded\n\nThe download services are busy.\n\nTry:\n1. Wait 30 seconds\n2. Try again\n3. Use a shorter video";
-    }
+    const helpMessage =
+      "All download services are currently unavailable. This can happen because:\n\n" +
+      "1. Video platforms block automated downloads\n" +
+      "2. Download services may be temporarily overloaded\n" +
+      "3. The video might be private or restricted\n\n" +
+      "Recommended alternatives:\n" +
+      "- Use browser extensions like VideoDownloadHelper\n" +
+      "- Try online services like savefrom.net or y2mate.com directly\n" +
+      "- Use dedicated apps like 4K Video Downloader or VidMate\n\n" +
+      "Please verify:\n" +
+      "1. The URL is correct and the video is public\n" +
+      "2. The video is not age-restricted\n" +
+      "3. Your internet connection is working";
 
     return res.status(503).json({
       error: helpMessage,
